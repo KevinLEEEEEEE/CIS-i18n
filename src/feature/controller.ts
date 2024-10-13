@@ -6,7 +6,6 @@ import {
     ChangeSettingHandler,
     DisplayMode,
     ProcessUnit,
-    AutoStylelintMode,
     AjaxResponseHandler,
     ReadSettingHandler,
     ReturnSettingHandler,
@@ -14,7 +13,6 @@ import {
     Language,
     TranslationModal,
     Platform,
-    OpenExternalHandler,
 } from '../types';
 import {
     getSettingByKey,
@@ -79,6 +77,7 @@ async function handleStylelint() {
 
 // 处理设置变更
 async function handleChangeSetting({ key, value }: { key: string, value: any }) {
+    console.log(`[Change Setting] ${key}: ${value}`);
     await figma.clientStorage.setAsync(key, value);
 }
 

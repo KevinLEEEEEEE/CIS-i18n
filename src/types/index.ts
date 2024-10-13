@@ -71,8 +71,15 @@ export interface StyleKey {
 export enum SettingKey {
     TargetLanguage = 'targetLanguage',
     DisplayMode = 'displayMode',
-    AutoStylelintMode = 'autoStylelintMode',
+    Platform = 'platform',
     TranslationModal = 'translationModal',
+    Termbase = 'termbase',
+    AutoStylelintMode = 'autoStylelintMode',
+    AutoPolishing = 'autoPolishing',
+    GoogleAPIKey = 'googleAPIKey',
+    BaiduAPIKey = 'baiduAPIKey',
+    BaiduPassword = 'baiduPassword',
+    CozeAPIKey = 'cozeAPIKey',
     isFirstOpen = 'isFirstOpen'
 }
 
@@ -86,7 +93,7 @@ export enum DisplayMode {
     Duplicate = 'duplicate'
 }
 
-export enum AutoStylelintMode {
+export enum SwitchMode {
     On = 'on',
     Off = 'off'
 }
@@ -98,6 +105,6 @@ export enum TranslationModal {
 }
 
 export enum Platform {
-    PC = 'pc',
+    Desktop = 'desktop',
     Mobile = 'mobile'
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from "react-router-dom";
 import { emit, on } from '@create-figma-plugin/utilities';
 import $ from 'jquery';
@@ -19,24 +19,51 @@ import {
     Language,
     DisplayMode,
     SettingKey,
-    ReturnSettingHandler
+    ReturnSettingHandler,
+    Platform
 } from '../../types';
+import { toaster } from 'baseui/toast';
+
+let channel = 0;
 
 const Toolbox = () => {
-    // 状态管理：选择的语言和显示模式
-    const [selectedLang, setSelectedLang] = useState<Value>([{ id: Language.EN }]);
-    const [selectedDisplayMode, setSelectedDisplayMode] = useState<Value>([{ id: DisplayMode.Duplicate }]);
+    const [selectedLang, setSelectedLang] = useState<Value>();
+    const [selectedDisplayMode, setSelectedDisplayMode] = useState<Value>();
+    const [selectedPlatform, setSelectedPlatform] = useState<Value>();
 
     // 初始化时更新窗口大小并读取设置
     useEffect(() => {
-        emit<ResizeWindowHandler>('RESIZE_WINDOW', { width: 380, height: 308 });
+        emit<ResizeWindowHandler>('RESIZE_WINDOW', { width: 380, height: 396 });
         emit<ReadSettingHandler>('READ_SETTING', { key: SettingKey.TargetLanguage });
         emit<ReadSettingHandler>('READ_SETTING', { key: SettingKey.DisplayMode });
+        emit<ReadSettingHandler>('READ_SETTING', { key: SettingKey.Platform });
     }, []);
 
-    // 处理 AJAX 请求
     useEffect(() => {
+        const currChannel = ++channel;
+
+        const handleReturnSetting = ({ key, value }) => {
+            if (currChannel !== channel) {
+                return;
+            }
+
+            const updateMap = {
+                [SettingKey.TargetLanguage]: () => setSelectedLang([{ id: value }]),
+                [SettingKey.DisplayMode]: () => setSelectedDisplayMode([{ id: value }]),
+                [SettingKey.Platform]: () => setSelectedPlatform([{ id: value }]),
+            };
+
+            if (updateMap[key]) {
+                updateMap[key]();
+                console.log(`[Update Toolbox] ${key}: ${value}`);
+            }
+        };
+
         const handleRequest = ({ url, method, dataType, data, messageID }) => {
+            if (currChannel !== channel) {
+                return;
+            }
+
             $.ajax({
                 url,
                 method,
@@ -52,35 +79,31 @@ const Toolbox = () => {
             });
         };
 
-        // 监听 DO_REQUEST 事件
+        on<ReturnSettingHandler>('RETURN_SETTING', handleReturnSetting);
         on<AjaxRequestHandler>('AJAX_REQUEST', handleRequest);
     }, []);
 
-    // 处理返回的设置
-    useEffect(() => {
-        const handleReturnSetting = ({ key, value }) => {
-            if (key === SettingKey.TargetLanguage) {
-                setSelectedLang([{ id: value }]);
-            } else if (key === SettingKey.DisplayMode) {
-                setSelectedDisplayMode([{ id: value }]);
-            }
-        };
-
-        // 监听 RETURN_SETTING 事件
-        on<ReturnSettingHandler>('RETURN_SETTING', handleReturnSetting);
-    }, []);
 
     // 处理目标语言变化
-    const handleTargetLangChange = (value: Value) => {
+    const handleTargetLangChange = useCallback((value: Value) => {
         setSelectedLang(value);
         emit<ChangeSettingHandler>('CHANGE_SETTING', { key: SettingKey.TargetLanguage, value: value[0].id.toString() });
-    };
+        toaster.info('Target language updated');
+    }, []);
 
     // 处理显示模式变化
-    const handleDisplayModeChange = (value: Value) => {
+    const handleDisplayModeChange = useCallback((value: Value) => {
         setSelectedDisplayMode(value);
         emit<ChangeSettingHandler>('CHANGE_SETTING', { key: SettingKey.DisplayMode, value: value[0].id.toString() });
-    };
+        toaster.info('Result updated');
+    }, []);
+
+    // 处理平台变化
+    const handlePlatformChange = useCallback((value: Value) => {
+        setSelectedPlatform(value);
+        emit<ChangeSettingHandler>('CHANGE_SETTING', { key: SettingKey.Platform, value: value[0].id.toString() });
+        toaster.info('Platform updated');
+    }, []);
 
     // 处理 Stylelint 按钮点击
     const handleStylelintClick = () => {
@@ -119,6 +142,19 @@ const Toolbox = () => {
                     value={selectedDisplayMode}
                     placeholder="Please select"
                     onChange={({ value }) => handleDisplayModeChange(value)}
+                />
+            </FormControl>
+
+            <FormControl label="Platform">
+                <Select
+                    clearable={false}
+                    options={[
+                        { label: "Desktop", id: Platform.Desktop },
+                        { label: "Mobile", id: Platform.Mobile },
+                    ]}
+                    value={selectedPlatform}
+                    placeholder="Please select"
+                    onChange={({ value }) => handlePlatformChange(value)}
                 />
             </FormControl>
 

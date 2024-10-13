@@ -1,4 +1,4 @@
-import { Language, DisplayMode, AutoStylelintMode, TranslationModal, SettingKey } from '../types';
+import { Language, DisplayMode, TranslationModal, SettingKey, Platform, SwitchMode } from '../types';
 import { getAbsolutePosition } from '@create-figma-plugin/utilities';
 
 async function getClientStorageValue(key: string, defaultValue: any) {
@@ -12,10 +12,24 @@ export async function getSettingByKey(key: SettingKey) {
             return getClientStorageValue("targetLanguage", Language.EN);
         case SettingKey.DisplayMode:
             return getClientStorageValue("displayMode", DisplayMode.Duplicate);
+        case SettingKey.Platform:
+            return getClientStorageValue("platform", Platform.Desktop);
         case SettingKey.TranslationModal:
             return getClientStorageValue("translationModal", TranslationModal.GoogleBasic);
+        case SettingKey.Termbase:
+            return getClientStorageValue("termbase", SwitchMode.On);
         case SettingKey.AutoStylelintMode:
-            return getClientStorageValue("autoStylelintMode", AutoStylelintMode.On);
+            return getClientStorageValue("autoStylelintMode", SwitchMode.On);
+        case SettingKey.AutoPolishing:
+            return getClientStorageValue("autoPolishing", SwitchMode.On);
+        case SettingKey.GoogleAPIKey:
+            return getClientStorageValue("googleAPIKey", "");
+        case SettingKey.BaiduAPIKey:
+            return getClientStorageValue("baiduAPIKey", "");
+        case SettingKey.BaiduPassword:
+            return getClientStorageValue("baiduPassword", "");
+        case SettingKey.CozeAPIKey:
+            return getClientStorageValue("cozeAPIKey", "");
         case SettingKey.isFirstOpen:
             return getClientStorageValue("isFirstOpen", true);
         default:

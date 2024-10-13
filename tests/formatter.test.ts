@@ -93,7 +93,7 @@ describe('getFormattedStyleKey', () => {
         const fontSize = 24;
         const lineHeight = 36;
         const language = Language.ZH;
-        const platform = Platform.PC;
+        const platform = Platform.Desktop;
 
         const result = getFormattedStyleKey(fontName, fontSize, lineHeight, language, platform);
         expect(result).toBe('84b11a3514fcc6331fd7b22faaf6b0e1e479a60c');
@@ -104,7 +104,7 @@ describe('getFormattedStyleKey', () => {
         const fontSize = 12;
         const lineHeight = 20;
         const language = Language.EN;
-        const platform = Platform.PC;
+        const platform = Platform.Desktop;
 
         const result = getFormattedStyleKey(fontName, fontSize, lineHeight, language, platform);
         expect(result).toBe('2d7121c34523ead5779a21d8ccdfb215b5c10ac3');
@@ -114,13 +114,13 @@ describe('getFormattedStyleKey', () => {
         const fontSize = 30;
         const lineHeight = 46;
         const language = Language.ZH;
-        const platform = Platform.PC;
+        const platform = Platform.Desktop;
 
         const result = getFormattedStyleKey(fontName, fontSize, lineHeight, language, platform);
         expect(result).toBe('baace18851d4410b290e76e4030a6c43894015b7');
     });
 
-    test('should return correct styleKey when all parameters are valid - from PC to Mobile', () => {
+    test('should return correct styleKey when all parameters are valid - from Desktop to Mobile', () => {
         const fontName = { family: "PingFang SC", style: "Regular" };
         const fontSize = 16;
         const lineHeight = 24;
@@ -142,12 +142,12 @@ describe('getFormattedStyleKey', () => {
         expect(result).toBe('');
     });
 
-    test('should return empty with unvalid fontSize - from Mobile to PC', () => {
+    test('should return empty with unvalid fontSize - from Mobile to Desktop', () => {
         const fontName = { family: "PingFang SC", style: "Medium" };
         const fontSize = 14;
         const lineHeight = 22;
         const language = Language.EN;
-        const platform = Platform.PC;
+        const platform = Platform.Desktop;
 
         const result = getFormattedStyleKey(fontName, fontSize, lineHeight, language, platform);
         expect(result).toBe('effac6f1285c0efcbcdfd9fac1295bc4fbcf82bb');
