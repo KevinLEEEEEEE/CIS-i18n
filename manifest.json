@@ -1,0 +1,25 @@
+{
+  "name": "Smart i18n",
+  "id": "1436271368098115416",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma",
+    "figjam"
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://api.fanyi.baidu.com/api/trans/vip/translate",
+      "https://translate.googleapis.com",
+      "https://translation.googleapis.com",
+      "https://api.coze.com",
+      "https://accounts.google.com",
+      "https://proxy.cors.sh"
+    ]
+  },
+  "permissions": [
+    "teamlibrary"
+  ]
+}
