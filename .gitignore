@@ -4,3 +4,4 @@ settings.json
 yarn-error.log
 .vscode
 config.js
+.DS_Store
