@@ -6,7 +6,7 @@ const BACKENDLESS_BASE_URL = 'https://infantvein-eu.backendless.app/api/counters
  * @param value 增加的值，默认为1
  * @returns Promise<number> 返回更新后的计数值
  */
-export async function incrementCounter(counterName: string, value: number = 1): Promise<number> {
+async function incrementCounter(counterName: string, value: number = 1): Promise<number> {
     if (process.env.NODE_ENV === 'development') {
         console.log(`[UsageRecord] Skip recording in Dev environment: ${counterName}`);
         return Promise.resolve(0); // 返回一个默认值
