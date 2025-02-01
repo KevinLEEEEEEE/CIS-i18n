@@ -48,7 +48,7 @@ function createPolishContentFunction() {
 
         // 等待直到有可用的任务槽
         while (currentTasks >= MAX_CONCURRENT_POLISH_TASKS) {
-            console.log('等待可用的任务槽');
+            console.log('[Polish] Task amount reaching limit, wait for release');
             await new Promise((resolve) => setTimeout(resolve, 100)); // 每100毫秒检查一次
         }
 
@@ -66,7 +66,7 @@ function createPolishContentFunction() {
         } else {
             // 如果达到限制，等待直到下一秒
             const waitTime = 1000 - timeElapsed;
-            console.log(`达到每秒调用限制，等待 ${waitTime} 毫秒`);
+            console.log(`[Polish] Request frequency reaching limit, wait ${waitTime} ms`);
             await new Promise((resolve) => setTimeout(resolve, waitTime));
             // 重置计数器和时间戳
             callCount = 1;
@@ -79,7 +79,7 @@ function createPolishContentFunction() {
         try {
             return await fetchFromCozeApi(prompt, content);
         } catch (error) {
-            console.error('Error occurred during API call, returning original content:', error);
+            console.error('[Polish] Error occurred during API call, returning original content:', error);
             return content; // 返回原始内容
         } finally {
             currentTasks--; // 任务完成后减少计数
@@ -108,7 +108,7 @@ async function fetchFromCozeApi(prompt: string, content: string): Promise<any> {
         const interval = setInterval(async () => {
             const isCompleted = await isChatComplete(conversationID, chatID);
 
-            console.log('等待Coze生成内容');
+            console.log('[Polish] Waiting for content return from Coze');
 
             if (isCompleted) {
                 clearInterval(interval);
@@ -119,11 +119,11 @@ async function fetchFromCozeApi(prompt: string, content: string): Promise<any> {
 
         const timeout = setTimeout(() => {
             clearInterval(interval);
-            console.error('Coze api timeout, returning original content', content);
+            console.error('[Polish] Coze api timeout, returning original content', content);
             resolve(content); // 返回原始内容
         }, 20000);
     }).catch(() => {
-        console.error('Error occurred, returning original content');
+        console.error('[Polish] Error occurred, returning original content');
         return content; // 返回原始内容
     });
 }
@@ -166,7 +166,7 @@ async function createChat(content: string) {
         const result = await response.json();
         return result.data;
     } catch (error) {
-        console.error('Error in createChat:', error);
+        console.error('[Polish] Error in create Coze Chat:', error);
         return null; // 或者返回一个默认值
     }
 }
@@ -197,7 +197,7 @@ async function isChatComplete(conversationID: string, chatID: string) {
         const res = await response.json();
         return res.data.status === 'completed';
     } catch (error) {
-        console.error('Error in isChatComplete:', error);
+        console.error('[Polish] Error in isChatComplete:', error);
         return false; // 返回 false 表示未完成
     }
 }
@@ -228,7 +228,7 @@ async function fetchChatResult(conversationID: string, chatID: string) {
         const res = await response.json();
         return res.data[0].content;
     } catch (error) {
-        console.error('Error in fetchChatResult:', error);
+        console.error('[Polish] Error in fetchChatResult:', error);
         return null; // 或者返回一个默认值
     }
 }

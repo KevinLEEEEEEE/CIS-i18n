@@ -15,10 +15,20 @@ export interface ShowToastHandler extends EventHandler {
     handler: (type: ToastType, message: string) => void;
 }
 
-// export interface CancelTaskHandler extends EventHandler {
-//     name: 'CANCEL_TASK'
-//     handler: () => void
-// }
+export interface UpdateTotalTasksHandler extends EventHandler {
+    name: 'UPDATE_TOTAL_TASKS';
+    handler: (totalAmount: number) => void;
+}
+
+export interface TaskCompleteHandler extends EventHandler {
+    name: 'TASK_COMPLETE';
+    handler: () => void;
+}
+
+export interface ClearTasksHandler extends EventHandler {
+    name: 'CLEAR_TASKS';
+    handler: () => void;
+}
 
 export interface ShowProcessingLayerHandler extends EventHandler {
     name: 'SHOW_PROCESSING_LAYER';
@@ -60,6 +70,11 @@ export interface AjaxResponseHandler extends EventHandler {
     handler: (res: { isSuccessful: boolean; data?: any; messageID: string }) => void;
 }
 
+export interface SetAccessTokenHandler extends EventHandler {
+    name: 'SET_ACCESS_TOKEN';
+    handler: (oauthCode: string) => void;
+}
+
 export interface ProcessNode {
     textNode: TextNode;
     nodeName: string;
@@ -88,6 +103,9 @@ export enum StorageKey {
     BaiduAppID = 'baiduAppID',
     BaiduKey = 'baiduKey',
     CozeAPIKey = 'cozeAPIKey',
+    GoogleAccessToken = 'googleAccessToken',
+    GoogleAccessTokenExpireDate = 'googleAccessTokenExpireDate',
+    GoogleRefreshToken = 'googleRefreshToken',
     isFirstOpen = 'isFirstOpen',
 }
 
@@ -107,6 +125,7 @@ export enum SwitchMode {
 }
 
 export enum TranslationModal {
+    GoogleAdvanced = 'GoogleAdvanced',
     GoogleBasic = 'GoogleBasic',
     GoogleFree = 'GoogleFree',
     Baidu = 'Baidu',

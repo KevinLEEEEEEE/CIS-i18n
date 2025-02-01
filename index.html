@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>显示当前 URL</title>
+    <title>CIS-i18n Plugin Oauth</title>
+    <link rel="stylesheet" href="https://unpkg.com/baseui@latest/dist/baseui.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,6 +16,7 @@
             margin: 0;
             background-color: #f4f4f9;
         }
+
         .url-display {
             padding: 20px;
             background-color: #fff;
@@ -22,10 +25,12 @@
         }
     </style>
 </head>
+
 <body>
     <div class="url-display">
         <h1>当前浏览器的 URL 是:</h1>
         <p id="current-url"></p>
+        <button class="baseui-button">Click Me</button>
     </div>
 
     <script>
@@ -35,4 +40,5 @@
         document.getElementById('current-url').textContent = currentUrl;
     </script>
 </body>
+
 </html>

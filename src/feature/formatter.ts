@@ -21,7 +21,7 @@ export function getFormattedContent(
     }
 
     if (typeof content !== 'string') {
-        console.error('Invalid content type, expected a string.');
+        console.error('[Formatter] Invalid content type, expected a string.');
         return content;
     }
 
@@ -154,8 +154,6 @@ function formatChineseDate(content: string): string {
     const formattedDateSymbol = formattedDateSpace.replace(/(\d{1,4}年)?(\d{1,2}月\d{1,2}日)，\s*(周[一二三四五六日])/g, (_match, year, date, weekday) => {
         return `${year || ''}${date} ${weekday}`;
     });
-
-    console.log(formattedDateSymbol)
 
     return formattedDateSymbol;
 }

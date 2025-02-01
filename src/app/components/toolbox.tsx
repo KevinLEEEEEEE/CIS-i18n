@@ -26,6 +26,9 @@ import {
     SetLocalStorageHandler,
     ShowProcessingLayerHandler,
     HideProcessingLayerHandler,
+    UpdateTotalTasksHandler,
+    TaskCompleteHandler,
+    ClearTasksHandler,
 } from '../../types';
 
 let channel = 0;
@@ -35,44 +38,8 @@ const Toolbox = () => {
     const [selectedDisplayMode, setSelectedDisplayMode] = useState<Value>([{ id: DisplayMode.Duplicate }]);
     const [selectedPlatform, setSelectedPlatform] = useState<Value>([{ id: Platform.Desktop }]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-
-    // const iframeRef = React.useRef(null);
-
-    // useEffect(() => {
-    //     const oauth2Endpoint = 'https://proxy.cors.sh/https://accounts.google.com/o/oauth2/v2/auth';
-    //     const params = {
-    //         client_id: '588396253414-ocifdou1f1ot312d0drfvrjcpq9lcbe2.apps.googleusercontent.com',
-    //         redirect_uri: 'https://cors.sh/callback',
-    //         response_type: 'token',
-    //         scope: 'https://www.googleapis.com/auth/cloud-translation',
-    //         include_granted_scopes: 'true',
-    //         state: 'pass-through value',
-    //     };
-
-    //     const urlParams = new URLSearchParams(params).toString();
-    //     const authUrl = `${oauth2Endpoint}?${urlParams}`;
-
-    //     if (iframeRef.current) {
-    //         iframeRef.current.src = authUrl;
-    //     }
-
-    //     const handleMessage = (event) => {
-    //         if (event.origin === 'https://cors.sh/callback') {
-    //             const token = new URLSearchParams(event.data).get('access_token');
-    //             if (token) {
-    //                 console.log('Received token:', token);
-    //                 // 在这里处理令牌，例如存储或使用它进行 API 调用
-    //             }
-    //         }
-    //     };
-
-    //     window.addEventListener('message', handleMessage);
-
-    //     return () => {
-    //         window.removeEventListener('message', handleMessage);
-    //     };
-    // }, []);
-
+    const [currentStep, setCurrentStep] = useState<number>(0);
+    const [totalSteps, setTotalSteps] = useState<number>(0);
 
     // 初始化时更新窗口大小并读取设置
     useEffect(() => {
@@ -86,9 +53,7 @@ const Toolbox = () => {
         const currChannel = ++channel;
 
         const handleRequest = async ({ url, messageID }) => {
-            if (currChannel !== channel) {
-                return;
-            }
+            if (currChannel !== channel) return;
 
             const response = await fetchJsonp(url, {
                 timeout: 15000,
@@ -104,9 +69,7 @@ const Toolbox = () => {
         };
 
         const handleReceiveLocalStorage = (objs: { key: StorageKey; value: string | number }[]) => {
-            if (currChannel !== channel) {
-                return;
-            }
+            if (currChannel !== channel) return;
 
             objs.forEach(({ key, value }) => {
                 const updateMap = {
@@ -117,31 +80,44 @@ const Toolbox = () => {
 
                 if (value && updateMap[key]) {
                     updateMap[key]();
-                    console.log(`[Update toolbox value] ${key}: ${value}`);
+                    console.log(`[Interface] Update key: ${key}, value: ${value}`);
                 }
             });
         };
 
         const showProcessingLayer = () => {
-            if (currChannel !== channel) {
-                return;
-            }
-
+            if (currChannel !== channel) return;
             setIsLoading(true);
         }
 
         const hideProcessingLayer = () => {
-            if (currChannel !== channel) {
-                return;
-            }
-
+            if (currChannel !== channel) return;
             setIsLoading(false);
         }
+
+        const handleUpdateTotalTasks = (total: number) => {
+            if (currChannel !== channel) return;
+            setTotalSteps(total);
+        };
+
+        const handleTaskComplete = () => {
+            if (currChannel !== channel) return;
+            setCurrentStep((prevStep) => prevStep + 1);
+        };
+
+        const handleClearTasks = () => {
+            if (currChannel !== channel) return;
+            setTotalSteps(0);
+            setCurrentStep(0);
+        };
 
         on<ReceiveLocalStorageHandler>('RECEIVE_LOCAL_STORAGE', handleReceiveLocalStorage);
         on<AjaxRequestHandler>('AJAX_REQUEST', handleRequest);
         on<ShowProcessingLayerHandler>('SHOW_PROCESSING_LAYER', showProcessingLayer);
         on<HideProcessingLayerHandler>('HIDE_PROCESSING_LAYER', hideProcessingLayer);
+        on<UpdateTotalTasksHandler>('UPDATE_TOTAL_TASKS', handleUpdateTotalTasks);
+        on<TaskCompleteHandler>('TASK_COMPLETE', handleTaskComplete);
+        on<ClearTasksHandler>('CLEAR_TASKS', handleClearTasks);
     }, []);
 
     // 处理目标语言变化
@@ -200,18 +176,12 @@ const Toolbox = () => {
                 >
                     <Spinner />
                     <div style={{ marginTop: '16px', marginBottom: '24px' }}>
-                        {/* <div style={{ marginTop: '16px', marginBottom: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}> */}
-                        <LabelMedium>Processing...</LabelMedium>
-                        {/* <Button onClick={handleCancel} kind="secondary">Cancel</Button> */}
+                        <LabelMedium>
+                            {currentStep > 0 ? `Processing... ${currentStep}/${totalSteps}` : 'Preparing...'}
+                        </LabelMedium>
                     </div>
                 </div>
             )}
-
-            {/* <iframe
-                ref={iframeRef}
-                style={{ width: '100%', height: '100%' }}
-                title="OAuth Authentication"
-            /> */}
 
             <FormControl label="Target language">
                 <Select

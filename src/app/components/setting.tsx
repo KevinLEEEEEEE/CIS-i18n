@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { emit, on } from '@create-figma-plugin/utilities';
 
@@ -10,16 +10,19 @@ import { Select, Value } from 'baseui/select';
 import { RadioGroup, Radio, ALIGN } from 'baseui/radio';
 import { Input } from 'baseui/input';
 import { toaster } from 'baseui/toast';
+import { ParagraphMedium } from 'baseui/typography';
 
 import {
     ReceiveLocalStorageHandler,
     RequestLocalStorageHandler,
     ResizeWindowHandler,
+    SetAccessTokenHandler,
     SetLocalStorageHandler,
     StorageKey,
     SwitchMode,
     TranslationModal,
 } from '../../types';
+import { googleOauthClientID } from '../../../config';
 
 let channel = 0;
 
@@ -34,7 +37,13 @@ const Setting = () => {
     const [baiduAppID, setBaiduAppID] = useState('');
     const [baiduKey, setBaiduKey] = useState('');
     const [cozeAPIKey, setCozeAPIKey] = useState('');
+    const [isGoogleAdvancedDisabled, setIsGoogleAdvancedDisabled] = useState(true);
     const navigate = useNavigate();
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const redirectUri = 'urn:ietf:wg:oauth:2.0:oob';
+    const scope = 'https://www.googleapis.com/auth/cloud-translation https://www.googleapis.com/auth/cloud-platform';
+    const authEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
     // 初始化时调整窗口大小
     useEffect(() => {
@@ -48,7 +57,7 @@ const Setting = () => {
                 StorageKey.GoogleAPIKey,
                 StorageKey.BaiduAppID,
                 StorageKey.BaiduKey,
-                StorageKey.CozeAPIKey,
+                StorageKey.CozeAPIKey
             ],
         });
     }, []);
@@ -71,17 +80,38 @@ const Setting = () => {
                     [StorageKey.BaiduAppID]: () => setBaiduAppID(value),
                     [StorageKey.BaiduKey]: () => setBaiduKey(value),
                     [StorageKey.CozeAPIKey]: () => setCozeAPIKey(value),
+                    [StorageKey.GoogleAccessToken]: () => setIsGoogleAdvancedDisabled(value === ''),
                 };
 
                 if (value && updateMap[key]) {
                     updateMap[key]();
-                    console.log(`[Update toolbox value] ${key}: ${value}`);
+                    console.log(`[Interface] Update key: ${key}, value: ${value}`);
                 }
             });
         };
 
         on<ReceiveLocalStorageHandler>('RECEIVE_LOCAL_STORAGE', handleReceiveLocalStorage);
     }, []);
+
+    const handleAuthClick = () => {
+        const authUrl = `${authEndpoint}?response_type=code&client_id=${googleOauthClientID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+
+        // 打开新窗口进行授权
+        window.open(authUrl, '_blank', 'width=500,height=600');
+    };
+
+    // 添加处理输入框中授权码的函数
+    const handleAuthCodeSubmit = async () => {
+        const inputElement = document.getElementById('authCodeInput') as HTMLInputElement;
+        const code = inputElement.value;
+
+        if (code) {
+            emit<SetAccessTokenHandler>('SET_ACCESS_TOKEN', code);
+        } else {
+            console.error('[Error] Authorization code is empty');
+            toaster.negative('Authorization code is empty. Please enter a valid code.');
+        }
+    };
 
     // 处理自动样式检查的变化
     const handleAutoStylelintChange = useCallback((value: string) => {
@@ -144,6 +174,7 @@ const Setting = () => {
                             <Select
                                 clearable={false}
                                 options={[
+                                    { label: 'GoogleAdvanced', id: TranslationModal.GoogleAdvanced, disabled: isGoogleAdvancedDisabled },
                                     { label: 'GoogleBasic', id: TranslationModal.GoogleBasic },
                                     { label: 'GoogleFree', id: TranslationModal.GoogleFree },
                                     { label: 'Baidu', id: TranslationModal.Baidu },
@@ -151,6 +182,11 @@ const Setting = () => {
                                 value={selectedTransModal}
                                 placeholder="Please select"
                                 onChange={({ value }) => handleTransModalChange(value)}
+                                onFocus={() => {
+                                    emit<RequestLocalStorageHandler>('REQUEST_LOCAL_STORAGE', {
+                                        key: [StorageKey.GoogleAccessToken],
+                                    });
+                                }}
                             />
                         </FormControl>
 
@@ -225,6 +261,49 @@ const Setting = () => {
                                 clearOnEscape
                             />
                         </FormControl>
+                    </Block>
+                </Tab>
+
+                <Tab title="Google Oauth">
+                    <Block style={{ height: 328 }}>
+                        <ParagraphMedium marginTop="0px" marginBottom="12px">
+                            Step 1: Please click the "Authorize with Google" button to authorize.
+                        </ParagraphMedium>
+
+                        <Button
+                            onClick={handleAuthClick}
+                            kind={KIND.secondary}
+                            overrides={{ BaseButton: { style: { width: '100%' } } }}
+                        >
+                            Authorize with Google
+                        </Button>
+
+                        <ParagraphMedium marginBottom="12px">
+                            Step 2: Paste authorization code here and click Submit Code button.
+                        </ParagraphMedium>
+
+                        <Block display="flex" flexDirection="column" width="100%">
+                            <Input
+                                inputRef={inputRef}
+                                id="authCodeInput"
+                                placeholder="Enter authorization code"
+                                overrides={{
+                                    Input: {
+                                        style: {
+                                            width: '100%',
+                                            // height: '120px', // 设置固定高度为 120px
+                                        },
+                                    },
+                                }}
+                            />
+                            <Button
+                                onClick={handleAuthCodeSubmit} // 调用的函数
+                                kind={KIND.secondary}
+                                overrides={{ BaseButton: { style: { marginTop: '8px', width: '100%' } } }}
+                            >
+                                Submit Code
+                            </Button>
+                        </Block>
                     </Block>
                 </Tab>
             </Tabs>

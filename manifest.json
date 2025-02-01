@@ -12,11 +12,11 @@
   "networkAccess": {
     "allowedDomains": [
       "https://api.fanyi.baidu.com/api/trans/vip/translate",
+      "https://oauth2.googleapis.com",
       "https://translate.googleapis.com",
       "https://translation.googleapis.com",
       "https://api.coze.com",
-      "https://accounts.google.com",
-      "https://proxy.cors.sh"
+      "https://infantvein-eu.backendless.app/api/counters/"
     ]
   },
   "permissions": [

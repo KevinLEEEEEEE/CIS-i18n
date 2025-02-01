@@ -10,7 +10,12 @@ import {
     SwitchMode,
 } from '../types';
 import { emit, on } from '@create-figma-plugin/utilities';
-import { config } from '../../config';
+import {
+    googleApiKey,
+    baiduAppId,
+    baiduKey,
+    cozeApiKey
+} from '../../config';
 
 const cache: { [key in StorageKey]?: any } = {};
 
@@ -23,10 +28,13 @@ const defaultValues: { [key in StorageKey]: any } = {
     [StorageKey.Termbase]: SwitchMode.On,
     [StorageKey.AutoStylelintMode]: SwitchMode.On,
     [StorageKey.AutoPolishing]: SwitchMode.On,
-    [StorageKey.GoogleAPIKey]: config.googleApiKey,
-    [StorageKey.BaiduAppID]: config.baiduAppID,
-    [StorageKey.BaiduKey]: config.baiduKey,
-    [StorageKey.CozeAPIKey]: config.cozeApiKey,
+    [StorageKey.GoogleAPIKey]: googleApiKey,
+    [StorageKey.BaiduAppID]: baiduAppId,
+    [StorageKey.BaiduKey]: baiduKey,
+    [StorageKey.CozeAPIKey]: cozeApiKey,
+    [StorageKey.GoogleAccessToken]: '',
+    [StorageKey.GoogleAccessTokenExpireDate]: '',
+    [StorageKey.GoogleRefreshToken]: '',
     [StorageKey.isFirstOpen]: true,
 };
 
@@ -43,11 +51,17 @@ export async function getClientStorageValue(key: StorageKey) {
     }
 
     const value = await figma.clientStorage.getAsync(key);
-    const result = value !== undefined ? value : defaultValues[key];
+    const result = value !== undefined ? value : (defaultValues[key] !== undefined ? defaultValues[key] : '');
 
     // 缓存结果
     cache[key] = result;
     return result;
+}
+
+export function formRequestBody(params: Record<string, string | number | boolean>) {
+    return Object.entries(params)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&');
 }
 
 function handleSetLocalStorage(objs: { key: StorageKey; value: any }[]) {

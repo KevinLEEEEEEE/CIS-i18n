@@ -2,9 +2,11 @@ import { emit, once } from '@create-figma-plugin/utilities';
 import { AjaxRequestHandler, Language, StorageKey, TranslationModal } from '../types';
 import md5 from 'md5';
 import { getClientStorageValue } from '../utils/utility';
+import { googleTranslateProjectID, googleTranslateLocations, googleTranslateGlossaryID } from '../../config';
 
 const CALL_LIMIT_PER_SECOND = 10; // 每秒请求的翻译次数上限
 const CALL_INTERVAL_PER_SECOND = 1000 / CALL_LIMIT_PER_SECOND; // 每次调用的间隔时间（毫秒）
+
 /**
  * 统一的错误处理函数
  * @param error - 错误对象
@@ -23,18 +25,7 @@ function handleError(error: any, context: string) {
  */
 export function needTranslating(content: string, targetLanguage: Language): boolean {
   const skipTranslateDictionary: Set<string> = new Set([
-    'CNY',
-    'USD',
-    'AED',
-    'EUR', // 欧元
-    'GBP', // 英镑
-    'JPY', // 日元
-    'CHF', // 瑞士法郎
-    'HKD', // 港元
-    'SGD', // 新加坡元
-    'RUB', // 俄罗斯卢布
-    'INR', // 印度卢比
-    'Hi Travel', // 添加无需翻译的单词
+    'CNY', 'USD', 'AED', 'EUR', 'GBP', 'JPY', 'CHF', 'HKD', 'SGD', 'RUB', 'INR', 'Hi Travel'
   ]);
 
   // 检查内容是否包含无需翻译的单词
@@ -58,29 +49,17 @@ export function needTranslating(content: string, targetLanguage: Language): bool
  * @returns 是否可访问的布尔值
  */
 export async function isGoogleTranslationApiAccessible(): Promise<boolean> {
-  const apiKey = await getClientStorageValue(StorageKey.GoogleAPIKey);
-
-  if (!apiKey) {
-    return false;
-  }
-
   try {
-    const fetchPromise = fetch(
-      `https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=en&tl=zh&q=test`,
-      {
+    const response = await Promise.race([
+      fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=en&tl=zh&q=test`, {
         method: 'GET',
-      }
-    );
+      }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 5000))
+    ]);
 
-    const timeoutPromise = new Promise<boolean>((_, reject) => {
-      setTimeout(() => reject(new Error('Request timed out')), 3000);
-    });
-
-    const response = await Promise.race([fetchPromise, timeoutPromise]);
-
-    return response && typeof response === 'object' && 'ok' in response ? response.ok : false;
+    return response.ok;
   } catch (error) {
-    console.error('Error accessing Google Translation API');
+    console.error('[Translator] Error accessing Google Translation API:', error);
     return false;
   }
 }
@@ -98,22 +77,26 @@ export async function translateContentByModal(
   translationModal: TranslationModal,
   termbaseMode: boolean
 ): Promise<string[]> {
+  // 验证输入参数
   if (!textArray || textArray.length === 0 || !targetLanguage || !translationModal) {
     return [];
   }
 
+  // 定义翻译策略
   const translationStrategies = {
+    [TranslationModal.GoogleAdvanced]: () => translator(translateByGoogleAdvanced, textArray, targetLanguage, termbaseMode),
     [TranslationModal.GoogleBasic]: () => translator(translateByGoogleBasic, textArray, targetLanguage, termbaseMode),
-    [TranslationModal.GoogleFree]: () =>
-      Promise.all(textArray.map((text) => translator(translateByGoogleFree, text, targetLanguage, termbaseMode))),
+    [TranslationModal.GoogleFree]: () => Promise.all(textArray.map((text) => translator(translateByGoogleFree, text, targetLanguage, termbaseMode))),
     [TranslationModal.Baidu]: () => translator(translateByBaidu, textArray, targetLanguage, termbaseMode),
   };
 
+  // 获取对应的翻译函数
   const translateFunction = translationStrategies[translationModal];
   if (!translateFunction) {
     throw new Error('Unsupported translation modal');
   }
 
+  // 执行翻译
   return await translateFunction();
 }
 
@@ -159,6 +142,57 @@ function translator(
 }
 
 /**
+ * Google Advanced 翻译
+ * @param query - 待翻译的文本数组
+ * @param targetLanguage - 目标语言
+ * @returns 翻译后的文本数组
+ */
+async function translateByGoogleAdvanced(query: string[], targetLanguage: Language, sourceLanguage: Language, termbaseMode: Boolean) {
+  try {
+    const accessToken = await getClientStorageValue(StorageKey.GoogleAccessToken);
+
+    const requestBody = {
+      contents: query,
+      mimeType: 'text/plain',
+      sourceLanguageCode: sourceLanguage,
+      targetLanguageCode: targetLanguage,
+    };
+
+    if (termbaseMode) {
+      const glossaryConfig = {
+        glossary: `projects/${googleTranslateProjectID}/locations/${googleTranslateLocations}/glossaries/${googleTranslateGlossaryID}`,
+      };
+
+      (requestBody as any).glossaryConfig = glossaryConfig;
+    }
+
+    const response = await fetch(`https://translation.googleapis.com/v3/projects/${googleTranslateProjectID}/locations/${googleTranslateLocations}:translateText`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error('Translation Request Failed Due to Network Error');
+    }
+
+    const data = await response.json();
+
+    const translations = termbaseMode && data.glossaryTranslations
+      ? data.glossaryTranslations
+      : data.translations;
+
+    return translations.map((item: any) => item['translatedText'] || '');
+  } catch (error) {
+    handleError(error, 'Failed to translate by Google Advanced');
+    return [];
+  }
+}
+
+/**
  * Google Basic 翻译
  * @param query - 待翻译的文本数组
  * @param targetLanguage - 目标语言
@@ -167,12 +201,16 @@ function translator(
 async function translateByGoogleBasic(query: string[], targetLanguage: Language, sourceLanguage: Language) {
   try {
     const apiKey = await getClientStorageValue(StorageKey.GoogleAPIKey);
-    const requestBody = JSON.stringify({ q: query, target: targetLanguage, source: sourceLanguage });
+    const requestBody = {
+      q: query,
+      target: targetLanguage,
+      source: sourceLanguage
+    };
 
     const response = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: requestBody,
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -266,7 +304,7 @@ async function translateByBaidu(
       });
     });
   } catch (error) {
-    console.error('Failed to translate by Baidu:', error);
+    console.error('[Translator] Failed to translate by Baidu:', error);
     return [];
   }
 }

@@ -14,11 +14,18 @@ import {
     ToastType,
     ShowProcessingLayerHandler,
     HideProcessingLayerHandler,
+    ClearTasksHandler,
+    UpdateTotalTasksHandler,
+    TaskCompleteHandler,
+    SetAccessTokenHandler,
 } from '../types';
+
 import { getClientStorageValue } from '../utils/utility';
 import { translateContentByModal, needTranslating, isGoogleTranslationApiAccessible } from './translator';
 import { polishContent, needPolishing } from './polisher';
 import { getFormattedContent, getFormattedStyleKey } from './formatter';
+import { addTranslateUsageCount, addStylelintUsageCount, addProcessNodesCount } from './usageRecord';
+import { checkAndrefreshAccessToken, setAccessToken } from './oauthManager';
 
 const TRANSLATE_CHUNK_SIZE = 15;
 
@@ -26,6 +33,7 @@ const TRANSLATE_CHUNK_SIZE = 15;
 async function init() {
     figma.showUI(__html__, { width: 380, height: 308 });
     figma.skipInvisibleInstanceChildren = true
+    checkAndrefreshAccessToken();
 }
 
 // 翻译按钮被点击
@@ -40,102 +48,116 @@ async function handleStylelint() {
     processNodesTasks([...figma.currentPage.selection], false, false, true);
 }
 
+function handleSetAccessToken(oauthCode: string) {
+    setAccessToken(oauthCode);
+}
+
 // 核心处理逻辑
 async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, needPolish: boolean, needFormat: boolean) {
     if (nodes.length === 0) {
-        emit<ShowToastHandler>(
-            'SHOW_TOAST',
-            ToastType.Warning,
-            'Please select at least one node'
-        );
-
+        emitWarning('Please select at least one node');
         return;
     }
 
     if (!needTranslate && !needPolish && !needFormat) {
-        console.log('【没有需要执行的任务】');
-        emit<ShowToastHandler>(
-            'SHOW_TOAST',
-            ToastType.Warning,
-            'No tasks to execute'
-        );
-
+        emitWarning('No tasks to execute');
         return;
     }
 
+    updateUsageCounts(needTranslate, needFormat);
+
+    emit<ClearTasksHandler>('CLEAR_TASKS');
     emit<ShowProcessingLayerHandler>('SHOW_PROCESSING_LAYER');
 
     const startTime = new Date();
-    const [targetLanguage, displayMode, platform, translationModal] = await Promise.all([
+    const [targetLanguage, displayMode, platform, translationModal] = await getSettings();
+    const tasksMonitor: Promise<void>[] = [];
+
+    console.log(`[Task begin] TargetLang: ${targetLanguage}, DisplayMode: ${displayMode}, Platform: ${platform}, TransModal: ${translationModal}`);
+
+    // 复制节点并重命名（如果需要）
+    if (displayMode === DisplayMode.Duplicate) {
+        nodes = duplicateAndRenameNodes(nodes, targetLanguage);
+    }
+
+    // 收集所有文本节点
+    const textNodes = traverseTextNodes(nodes);
+    const processNodes: ProcessNode[] = createProcessNodes(textNodes, tasksMonitor);
+
+    // 更新待完成的任务总数
+    emit<UpdateTotalTasksHandler>('UPDATE_TOTAL_TASKS', processNodes.length);
+    // 埋点记录本次操作影响的节点数
+    addProcessNodesCount(processNodes.length);
+
+    // 处理需要翻译的节点
+    if (needTranslate) {
+        const availableTransModal = await getAvaliableTransModal(translationModal);
+        const termbaseMode = (await getClientStorageValue(StorageKey.Termbase)) === SwitchMode.On;
+        const untranslatedNodes = processNodes.filter((node) =>
+            needTranslating(node.textNode.characters, targetLanguage)
+        );
+
+        // 将节点分组并行翻译
+        const translationPromises = Array.from({ length: Math.ceil(untranslatedNodes.length / TRANSLATE_CHUNK_SIZE) }, async (_, i) => {
+            const nodesChunk = untranslatedNodes.slice(i * TRANSLATE_CHUNK_SIZE, (i + 1) * TRANSLATE_CHUNK_SIZE);
+
+            return translate(nodesChunk, targetLanguage, availableTransModal, termbaseMode).then(() => {
+                return Promise.all(nodesChunk.map(async (node) => {
+                    await polishAndFormatNode(node, needPolish, needFormat, targetLanguage, platform);
+                }));
+            });
+        });
+
+        await Promise.all(translationPromises);
+    }
+
+    // 处理剩余的节点
+    const remainingNodes = needTranslate ? processNodes.filter((node) => !needTranslating(node.textNode.characters, targetLanguage)) : processNodes;
+    await Promise.all(remainingNodes.map(node => polishAndFormatNode(node, false, needFormat, targetLanguage, platform)));
+
+    // 记录任务完成时间
+    logCompletion(startTime);
+}
+
+async function polishAndFormatNode(node: ProcessNode, needPolish: boolean, needFormat: boolean, targetLanguage: Language, platform: Platform) {
+    if (needPolish && needPolishing(node.updatedContent)) {
+        await polish(node, targetLanguage);
+    }
+    if (needFormat) {
+        formatter(node, targetLanguage, platform);
+    }
+    updateNodeStyleAndContent(node);
+}
+
+function emitWarning(message: string) {
+    emit<ShowToastHandler>('SHOW_TOAST', ToastType.Warning, message);
+}
+
+function updateUsageCounts(needTranslate: boolean, needFormat: boolean) {
+    if (needTranslate) {
+        addTranslateUsageCount();
+    }
+    if (needFormat) {
+        addStylelintUsageCount();
+    }
+}
+
+async function getSettings() {
+    return Promise.all([
         getClientStorageValue(StorageKey.TargetLanguage) as Promise<Language>,
         getClientStorageValue(StorageKey.DisplayMode) as Promise<DisplayMode>,
         getClientStorageValue(StorageKey.Platform) as Promise<Platform>,
         getClientStorageValue(StorageKey.TranslationModal),
     ]);
-    const tasksMonitor: Promise<void>[] = [];
-
-    console.log(`【开始任务】目标语言: ${targetLanguage}, 显示模式: ${displayMode}, 平台: ${platform}, 翻译模型: ${translationModal}`);
-
-    // 复制节点并重命名
-    if (displayMode === DisplayMode.Duplicate) {
-        nodes = duplicateAndRenameNodes(nodes, targetLanguage);
-    }
-
-    const textNodes = traverseTextNodes(nodes);
-    const processNodes: ProcessNode[] = createProcessNodes(textNodes, tasksMonitor);
-
-    // 所有 promise 完成
-    Promise.all(tasksMonitor).then(() => {
-        const endTime = new Date(); // 记录结束时间
-        const duration = endTime.getTime() - startTime.getTime(); // 计算持续时间
-        console.log(`【所有任务完成】运行时长: ${duration} 毫秒`); // 输出运行时长
-
-        emit<HideProcessingLayerHandler>('HIDE_PROCESSING_LAYER');
-        emit<ShowToastHandler>(
-            'SHOW_TOAST',
-            ToastType.Info,
-            `All tasks completed in ${(duration / 1000).toFixed(1)} seconds`
-        );
-    });
-
-    if (needTranslate) {
-        // 过滤出需要翻译的节点
-        const availableTransModal = await getAvaliableTransModal(translationModal);
-        const termbaseMode = (await getClientStorageValue(StorageKey.Termbase)) === SwitchMode.On;
-        const untranslatedNodes: ProcessNode[] = processNodes.filter((node) =>
-            needTranslating(node.textNode.characters, targetLanguage)
-        );
-
-        // 将节点分组，每组包含 TRANSLATE_CHUNK_SIZE 个节点，并行执行
-        Array.from({ length: Math.ceil(untranslatedNodes.length / TRANSLATE_CHUNK_SIZE) }, async (_, i) => {
-            const nodesChunks = untranslatedNodes.slice(i * TRANSLATE_CHUNK_SIZE, (i + 1) * TRANSLATE_CHUNK_SIZE);
-
-            translate(nodesChunks, targetLanguage, availableTransModal, termbaseMode).then(() => {
-                nodesChunks.forEach(async (node) => {
-                    if (needPolish && needPolishing(node.updatedContent)) {
-                        await polish(node, targetLanguage);
-                    }
-                    if (needFormat) {
-                        formatter(node, targetLanguage, platform);
-                    }
-                    updateNodeStyleAndContent(node);
-                });
-            });
-        });
-    }
-
-    const restNodes: ProcessNode[] = needTranslate
-        ? processNodes.filter((node) => !needTranslating(node.textNode.characters, targetLanguage))
-        : processNodes;
-
-    restNodes.forEach((node) => {
-        if (needFormat) {
-            formatter(node, targetLanguage, platform);
-        }
-        updateNodeStyleAndContent(node);
-    });
 }
 
+function logCompletion(startTime: Date) {
+    const endTime = new Date();
+    const duration = endTime.getTime() - startTime.getTime();
+    console.log(`[Task Finished] Use ${duration}ms in total`);
+    emit<HideProcessingLayerHandler>('HIDE_PROCESSING_LAYER');
+    emit<ShowToastHandler>('SHOW_TOAST', ToastType.Info, `All tasks completed in ${(duration / 1000).toFixed(1)} seconds`);
+}
 
 function createProcessNodes(textNodes: TextNode[], tasksMonitor: Promise<void>[]) {
     return textNodes
@@ -169,6 +191,7 @@ async function updateNodeStyleAndContent(processNode: ProcessNode) {
         await updateNodeContent(processNode.textNode, processNode.updatedContent);
     }
 
+    emit<TaskCompleteHandler>('TASK_COMPLETE');
     processNode.completeCallback(); // 单个 ProcessNode 任务全部完成后，调用 callback
 }
 
@@ -179,7 +202,7 @@ async function translate(
     termbaseMode: boolean
 ) {
     const contentArray = processNodes.map((node) => node.textNode.characters);
-    console.log('【翻译文本】', contentArray);
+    console.log('[Translate Task] Target: ', contentArray);
 
     const translatedContentArray = await translateContentByModal(
         contentArray,
@@ -187,7 +210,8 @@ async function translate(
         translationModal,
         termbaseMode
     );
-    console.log('【翻译结果】', translatedContentArray);
+
+    console.log('[Translate Task] Result: ', translatedContentArray);
 
     processNodes.forEach((processNode: ProcessNode, index: number) => {
         processNode.updatedContent = translatedContentArray[index] || '';
@@ -196,10 +220,9 @@ async function translate(
 
 async function polish(processNode: ProcessNode, targetLanguage: Language) {
     const content = processNode.updatedContent || processNode.textNode.characters;
-    console.log('【润色文本】', content);
-
     const polishedContent = await polishContent(content, targetLanguage);
-    console.log('【润色结果】', polishedContent);
+
+    console.log(`[Polish Task]\n\nTarget: ${content} \n\nResult: ${polishedContent}`);
 
     // 更新节点内容
     processNode.updatedContent = polishedContent;
@@ -207,24 +230,21 @@ async function polish(processNode: ProcessNode, targetLanguage: Language) {
 
 function formatter(processNode: ProcessNode, targetLanguage: Language, platform: Platform) {
     const content = processNode.updatedContent || processNode.textNode.characters;
-    console.log('【标准化文本】', content);
-
     const fontname = getFisrtFontName(processNode.textNode);
     const fontsize = getFisrtFontSize(processNode.textNode);
-
+    const formattedStyleKey = getFormattedStyleKey(fontname, fontsize, targetLanguage, platform);
     const formattedContent = getFormattedContent(
         content,
         targetLanguage,
         processNode.nodeName,
         processNode.parentNodeName
     );
-    const formattedStyleKey = getFormattedStyleKey(fontname, fontsize, targetLanguage, platform);
 
     if (formattedContent === '' || formattedStyleKey === '') {
         return;
     }
 
-    console.log('【标准化后文本】', formattedContent, `${formattedStyleKey ? 'keyMatched' : 'keyNotMatched'}`);
+    console.log(`[Format Task]\n\nTarget: ${content} \n\nResult: ${formattedContent}`);
 
     processNode.updatedContent = formattedContent;
     processNode.updatedStyleKey = formattedStyleKey;
@@ -275,7 +295,7 @@ async function updateNodeContent(node: TextNode, content: string) {
 
         node.characters = content;
     } catch (error) {
-        console.log('【错误】文本节点字体提取出错', node.characters);
+        console.error('[Error] Failed to get range font name of: ', node.characters);
     }
 }
 
@@ -363,18 +383,16 @@ function getFisrtFontSize(node: TextNode) {
 }
 
 async function getAvaliableTransModal(translationModal: TranslationModal) {
-    if (translationModal === TranslationModal.GoogleBasic || translationModal === TranslationModal.GoogleFree) {
-        if (await isGoogleTranslationApiAccessible()) {
-            return translationModal;
-        }
+    if (translationModal.includes('Google') && await isGoogleTranslationApiAccessible()) {
+        return translationModal;
+    }
 
+    if (translationModal.includes('Google')) {
         emit<ShowToastHandler>(
             'SHOW_TOAST',
             ToastType.Warning,
             'Google Translation is unavailable. Switch to Baidu Translation.'
         );
-
-        return TranslationModal.Baidu;
     }
 
     return TranslationModal.Baidu;
@@ -386,3 +404,4 @@ init();
 on<ResizeWindowHandler>('RESIZE_WINDOW', ({ width, height }) => figma.ui.resize(width, height));
 on<TranslateHandler>('TRANSLATE', handleTranslate);
 on<StylelintHandler>('STYLELINT', handleStylelint);
+on<SetAccessTokenHandler>('SET_ACCESS_TOKEN', handleSetAccessToken);
