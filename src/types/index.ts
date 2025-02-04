@@ -40,6 +40,11 @@ export interface HideProcessingLayerHandler extends EventHandler {
     handler: () => void;
 }
 
+export interface GoogleAccessTokenSuccessHandler extends EventHandler {
+    name: 'GOOGLE_ACCESS_TOKEN_SUCCESS';
+    handler: () => void;
+}
+
 export interface ResizeWindowHandler extends EventHandler {
     name: 'RESIZE_WINDOW';
     handler: (windowSize: { width: number; height: number }) => void;

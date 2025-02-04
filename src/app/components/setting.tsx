@@ -11,8 +11,10 @@ import { RadioGroup, Radio, ALIGN } from 'baseui/radio';
 import { Input } from 'baseui/input';
 import { toaster } from 'baseui/toast';
 import { ParagraphMedium } from 'baseui/typography';
+import { Modal, ModalHeader, ModalBody, ModalFooter, ModalButton } from 'baseui/modal';
 
 import {
+    GoogleAccessTokenSuccessHandler,
     ReceiveLocalStorageHandler,
     RequestLocalStorageHandler,
     ResizeWindowHandler,
@@ -23,8 +25,6 @@ import {
     TranslationModal,
 } from '../../types';
 import { googleOauthClientID } from '../../../config';
-
-let channel = 0;
 
 const Setting = () => {
     // 状态管理
@@ -40,6 +40,7 @@ const Setting = () => {
     const [isGoogleAdvancedDisabled, setIsGoogleAdvancedDisabled] = useState(true);
     const navigate = useNavigate();
     const inputRef = useRef<HTMLInputElement>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const redirectUri = 'urn:ietf:wg:oauth:2.0:oob';
     const scope = 'https://www.googleapis.com/auth/cloud-translation https://www.googleapis.com/auth/cloud-platform';
@@ -57,19 +58,14 @@ const Setting = () => {
                 StorageKey.GoogleAPIKey,
                 StorageKey.BaiduAppID,
                 StorageKey.BaiduKey,
-                StorageKey.CozeAPIKey
+                StorageKey.CozeAPIKey,
+                StorageKey.GoogleAccessToken
             ],
         });
     }, []);
 
     useEffect(() => {
-        const currChannel = ++channel;
-
         const handleReceiveLocalStorage = (objs: { key: StorageKey; value: string | SwitchMode }[]) => {
-            if (currChannel !== channel) {
-                return;
-            }
-
             objs.forEach(({ key, value }) => {
                 const updateMap = {
                     [StorageKey.TranslationModal]: () => setSelectedTransModal([{ id: value }]),
@@ -90,8 +86,39 @@ const Setting = () => {
             });
         };
 
-        on<ReceiveLocalStorageHandler>('RECEIVE_LOCAL_STORAGE', handleReceiveLocalStorage);
+        const unsubscribeReceiveLocalStorage = on<ReceiveLocalStorageHandler>('RECEIVE_LOCAL_STORAGE', handleReceiveLocalStorage);
+
+        return () => {
+            unsubscribeReceiveLocalStorage();
+        }
     }, []);
+
+    useEffect(() => {
+        const unsubscribeGoogleAccessTokenSuccess = on<GoogleAccessTokenSuccessHandler>('GOOGLE_ACCESS_TOKEN_SUCCESS', handleGoogleAccessTokenSuccess);
+
+        return () => {
+            unsubscribeGoogleAccessTokenSuccess();
+        }
+    }, [selectedTransModal]);
+
+
+    const handleGoogleAccessTokenSuccess = () => {
+        if (selectedTransModal[0].id !== TranslationModal.GoogleAdvanced) {
+            setIsModalOpen(true);
+        }
+
+        console.log('Updated selectedTransModal:', selectedTransModal);
+    };
+
+    const handleConfirmChange = () => {
+        setSelectedTransModal([{ id: TranslationModal.GoogleAdvanced }]);
+        setActiveTab(0); // 跳转到第一个 Tab
+        setIsModalOpen(false);
+    };
+
+    const handleCancelChange = () => {
+        setIsModalOpen(false);
+    };
 
     const handleAuthClick = () => {
         const authUrl = `${authEndpoint}?response_type=code&client_id=${googleOauthClientID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
@@ -335,7 +362,24 @@ const Setting = () => {
                     </Button>
                 </Link>
             </Block>
+
+            <Modal onClose={handleCancelChange} isOpen={isModalOpen}>
+                <ModalHeader>Change Translation Model</ModalHeader>
+                <ModalBody>
+                    Google access token configured successfully. Do you want to switch the translation model to Google Advanced?
+                </ModalBody>
+                <ModalFooter>
+                    <ModalButton kind={KIND.tertiary} onClick={handleCancelChange}>
+                        Cancel
+                    </ModalButton>
+                    <ModalButton onClick={handleConfirmChange}>
+                        Confirm
+                    </ModalButton>
+                </ModalFooter>
+            </Modal>
         </Block>
+
+
     );
 };
 

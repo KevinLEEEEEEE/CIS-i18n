@@ -1,6 +1,6 @@
 import { emit } from '@create-figma-plugin/utilities';
 import { googleOauthClientID, googleOauthClientSecret } from '../../config';
-import { ShowToastHandler, StorageKey, ToastType } from '../types';
+import { GoogleAccessTokenSuccessHandler, ShowToastHandler, StorageKey, ToastType } from '../types';
 import { formRequestBody, getClientStorageValue, setLocalStorage } from '../utils/utility';
 
 const redirectUri = 'urn:ietf:wg:oauth:2.0:oob';
@@ -32,7 +32,9 @@ export async function setAccessToken(oauthCode: string) {
             setLocalStorage(StorageKey.GoogleAccessTokenExpireDate, expireDate.toISOString());
             setLocalStorage(StorageKey.GoogleRefreshToken, tokenResponse.refresh_token);
 
+
             emit<ShowToastHandler>('SHOW_TOAST', ToastType.Positive, 'Google Advanced Translation activated successfully');
+            emit<GoogleAccessTokenSuccessHandler>('GOOGLE_ACCESS_TOKEN_SUCCESS');
         } else {
             console.error('[Oauth] Failed to obtain access token:', tokenResponse);
             emit<ShowToastHandler>('SHOW_TOAST', ToastType.Negative, 'Authorization code error. Contact developer for help.');

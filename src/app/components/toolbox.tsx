@@ -31,8 +31,6 @@ import {
     ClearTasksHandler,
 } from '../../types';
 
-let channel = 0;
-
 const Toolbox = () => {
     const [selectedLang, setSelectedLang] = useState<Value>([{ id: Language.EN }]);
     const [selectedDisplayMode, setSelectedDisplayMode] = useState<Value>([{ id: DisplayMode.Duplicate }]);
@@ -50,11 +48,7 @@ const Toolbox = () => {
     }, []);
 
     useEffect(() => {
-        const currChannel = ++channel;
-
         const handleRequest = async ({ url, messageID }) => {
-            if (currChannel !== channel) return;
-
             const response = await fetchJsonp(url, {
                 timeout: 15000,
             })
@@ -69,8 +63,6 @@ const Toolbox = () => {
         };
 
         const handleReceiveLocalStorage = (objs: { key: StorageKey; value: string | number }[]) => {
-            if (currChannel !== channel) return;
-
             objs.forEach(({ key, value }) => {
                 const updateMap = {
                     [StorageKey.TargetLanguage]: () => setSelectedLang([{ id: value }]),
@@ -86,38 +78,43 @@ const Toolbox = () => {
         };
 
         const showProcessingLayer = () => {
-            if (currChannel !== channel) return;
             setIsLoading(true);
         }
 
         const hideProcessingLayer = () => {
-            if (currChannel !== channel) return;
             setIsLoading(false);
         }
 
         const handleUpdateTotalTasks = (total: number) => {
-            if (currChannel !== channel) return;
             setTotalSteps(total);
         };
 
         const handleTaskComplete = () => {
-            if (currChannel !== channel) return;
             setCurrentStep((prevStep) => prevStep + 1);
         };
 
         const handleClearTasks = () => {
-            if (currChannel !== channel) return;
             setTotalSteps(0);
             setCurrentStep(0);
         };
 
-        on<ReceiveLocalStorageHandler>('RECEIVE_LOCAL_STORAGE', handleReceiveLocalStorage);
-        on<AjaxRequestHandler>('AJAX_REQUEST', handleRequest);
-        on<ShowProcessingLayerHandler>('SHOW_PROCESSING_LAYER', showProcessingLayer);
-        on<HideProcessingLayerHandler>('HIDE_PROCESSING_LAYER', hideProcessingLayer);
-        on<UpdateTotalTasksHandler>('UPDATE_TOTAL_TASKS', handleUpdateTotalTasks);
-        on<TaskCompleteHandler>('TASK_COMPLETE', handleTaskComplete);
-        on<ClearTasksHandler>('CLEAR_TASKS', handleClearTasks);
+        const unsubscribeReceiveLocalStorage = on<ReceiveLocalStorageHandler>('RECEIVE_LOCAL_STORAGE', handleReceiveLocalStorage);
+        const unsubscribeAjaxRequest = on<AjaxRequestHandler>('AJAX_REQUEST', handleRequest);
+        const unsubscribeShowProcessingLayer = on<ShowProcessingLayerHandler>('SHOW_PROCESSING_LAYER', showProcessingLayer);
+        const unsubscribeHideProcessingLayer = on<HideProcessingLayerHandler>('HIDE_PROCESSING_LAYER', hideProcessingLayer);
+        const unsubscribeUpdateTotalTasks = on<UpdateTotalTasksHandler>('UPDATE_TOTAL_TASKS', handleUpdateTotalTasks);
+        const unsubscribeTaskComplete = on<TaskCompleteHandler>('TASK_COMPLETE', handleTaskComplete);
+        const unsubscribeClearTasks = on<ClearTasksHandler>('CLEAR_TASKS', handleClearTasks);
+
+        return () => {
+            unsubscribeReceiveLocalStorage();
+            unsubscribeAjaxRequest();
+            unsubscribeShowProcessingLayer();
+            unsubscribeHideProcessingLayer();
+            unsubscribeUpdateTotalTasks();
+            unsubscribeTaskComplete();
+            unsubscribeClearTasks();
+        };
     }, []);
 
     // 处理目标语言变化
@@ -145,13 +142,11 @@ const Toolbox = () => {
 
     // 处理 Stylelint 按钮点击
     const handleStylelintClick = () => {
-        // setIsLoading(true); // 显示蒙层
         emit<StylelintHandler>('STYLELINT');
     };
 
     // 处理 Translate 按钮点击
     const handleTranslateClick = () => {
-        // setIsLoading(true); // 显示蒙层
         emit<TranslateHandler>('TRANSLATE');
     };
 
