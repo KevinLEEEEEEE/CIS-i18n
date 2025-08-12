@@ -356,7 +356,7 @@ const Setting = () => {
             <Block
                 style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: 8, paddingBottom: 8 }}
             >
-                <Link to="https://bytedance.larkoffice.com/docx/FSqgdvs3co71E1xspsjc7XXan3f" target="_blank" rel="noopener noreferrer">
+                <Link to="https://bytedance.larkoffice.com/docx/FSqgdvs3co71E1xspsjc7XXan3f#share-KDSAd12zMojjdlxDP1KcC0EGned" target="_blank" rel="noopener noreferrer">
                     <Button kind={KIND.tertiary} size={SIZE.compact}>
                         Help
                     </Button>

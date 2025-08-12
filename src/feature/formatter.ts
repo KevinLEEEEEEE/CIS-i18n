@@ -369,7 +369,7 @@ const typographyDictionary = {
         lineHeight: 46,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: 'baace18851d4410b290e76e4030a6c43894015b7',
+        styleKey: 'bb7500b30fed51ed976517f2fd65f263d1145d66',
     },
     一级标题_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Semibold' },
@@ -377,7 +377,7 @@ const typographyDictionary = {
         lineHeight: 36,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: '84b11a3514fcc6331fd7b22faaf6b0e1e479a60c',
+        styleKey: '220be5c405c5b808bc8231e7ea05f33231eb1242',
     },
     二级标题_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -385,7 +385,7 @@ const typographyDictionary = {
         lineHeight: 30,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: '815d93ed9bfd4457154e8938482e258c29ef97dd',
+        styleKey: '08bb5f5da607b2bdb4969be6cc6bf0d5a197ba8f',
     },
     三级标题_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -393,7 +393,7 @@ const typographyDictionary = {
         lineHeight: 28,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: '357161d8af91a6c343195f3a85e437bd1ae7428a',
+        styleKey: '93f289fa230ecc35b45cd8fe5f41b155cf3bb768',
     },
     四级标题_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -401,7 +401,7 @@ const typographyDictionary = {
         lineHeight: 24,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: 'dc094b69f79fb32793a63a94ebfa0bee11c680ee',
+        styleKey: 'a57f240e66b420744d4f7ec85d890e5641829312',
     },
     五级标题_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -409,7 +409,7 @@ const typographyDictionary = {
         lineHeight: 24,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: 'b969aea446b6cdb04d9a22f74016d84804bd04ea',
+        styleKey: 'efa77a01fe18c71a508b610a9c5674aa95c4fd2c',
     },
     辅助标题_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -417,7 +417,7 @@ const typographyDictionary = {
         lineHeight: 22,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: '633417d53d1f6aaf5a25836c3dfbb7865cc26901',
+        styleKey: '60b3b4ad8906cb69682eae4f4095693128a5e900',
     },
     正文_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -425,7 +425,7 @@ const typographyDictionary = {
         lineHeight: 22,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: 'a619584c8b84081754e0d0548cc02918bb2608ae',
+        styleKey: '10f4b615066ae8e6456961e593dca76768302bce',
     },
     正文辅助_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -433,7 +433,7 @@ const typographyDictionary = {
         lineHeight: 20,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: '800d06fe6c96efcf63c147c3908ac723663ef12a',
+        styleKey: 'c376b786aede4dbf8ca98b63498ebebbc5ce7e06',
     },
     辅助_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -441,7 +441,7 @@ const typographyDictionary = {
         lineHeight: 20,
         language: Language.ZH,
         platform: Platform.Desktop,
-        styleKey: '08d5d98e3b3457af595d34e5701aa5f15b7d6bdf',
+        styleKey: 'f4039cc49a63b49e2bdeb17c73f573116d0330b9',
     },
     小辅助_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -449,7 +449,7 @@ const typographyDictionary = {
         lineHeight: 16,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: 'a468d88d9821a71292ff1248f343718729f385ee',
+        styleKey: '435a78769cf4fca9fa83819947af4c6cde58c167',
     },
     最小辅助_Desktop_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -457,7 +457,7 @@ const typographyDictionary = {
         lineHeight: 16,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: '3e7b95748455839143dce3a39f2c08ce24cca648',
+        styleKey: '8b58b2f36e7fb7908be628ae59167c7d748f442e',
     },
 
     'Title-0_Desktop_EN': {
@@ -466,7 +466,7 @@ const typographyDictionary = {
         lineHeight: 46,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: 'c94c00e250f2f32a1e99b8a4fb5f847d980c93f3',
+        styleKey: '001b1341efd53cd832dd322a929abcecfe164011',
     },
     'Title-1_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Semibold' },
@@ -474,7 +474,7 @@ const typographyDictionary = {
         lineHeight: 36,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: '493f65cc7355e1dfdb902d3ae2bb21931d898e9c',
+        styleKey: 'db59a74c4063c9b1c19f0cbf98168762ff679074',
     },
     'Title-2_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -482,7 +482,7 @@ const typographyDictionary = {
         lineHeight: 30,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: 'c272b336db56ff1ee5e67415b197fcdce26bf8e5',
+        styleKey: 'f9ef6f8980675286ade38ceda42e2ab478677ebc',
     },
     'Title-3_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -490,7 +490,7 @@ const typographyDictionary = {
         lineHeight: 28,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: 'f5ec4aa020fa8adcd2dd3d3422d75a0f40b9a602',
+        styleKey: '32268b86bddba13108e6e639b0ed19c596fc0911',
     },
     'Title-4_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -498,7 +498,7 @@ const typographyDictionary = {
         lineHeight: 24,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: 'fef0d8335452173953a6fe8309175fddb989c0d1',
+        styleKey: '31dbe7076ad0a5c8f0e1bc0119bed7bfb328746f',
     },
     'Title-5_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -506,15 +506,15 @@ const typographyDictionary = {
         lineHeight: 24,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: '2fb9fc4d80b17fbe299d8fad71ade84f0c8853ca',
+        styleKey: '2bea416b34e7527bdcd03e7a389ca7e081f32c1b',
     },
-    Headline_Desktop_EN: {
+    'Headline_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
         fontSize: 14,
         lineHeight: 22,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: 'effac6f1285c0efcbcdfd9fac1295bc4fbcf82bb',
+        styleKey: '79ea3d768e7c168125eadf7677a6594f67f1715a',
     },
     'Body-0_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -522,7 +522,7 @@ const typographyDictionary = {
         lineHeight: 22,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: 'bd0fe524af75554cb26f336c6916c3100be75f2d',
+        styleKey: '31ecf056f58ea611c0ae256dd94d2e4c0dc55f9d',
     },
     'Body-2_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -530,7 +530,7 @@ const typographyDictionary = {
         lineHeight: 20,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: '2d7121c34523ead5779a21d8ccdfb215b5c10ac3',
+        styleKey: 'ef2b901d720e847a9be44a4814c01282ecada982',
     },
     'Caption-0_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -538,7 +538,7 @@ const typographyDictionary = {
         lineHeight: 20,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: '3008f7356e60db42a85d8bcaf3be8674d36dc88e',
+        styleKey: 'dbed45afb5da6f5568a5458b95d5e2f1848c3d3f',
     },
     'Caption-1_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -546,7 +546,7 @@ const typographyDictionary = {
         lineHeight: 16,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: '74933d4d09d0c53610005529b169ce645707cb85',
+        styleKey: '7fdbe6f0a3685f5aac25a3087accb2f605c02a95',
     },
     'Caption-3_Desktop_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -554,16 +554,16 @@ const typographyDictionary = {
         lineHeight: 16,
         language: Language.EN,
         platform: Platform.Desktop,
-        styleKey: '3aa3ee2538536526e5083d46e57a82552dadde45',
+        styleKey: 'b55e01884f5be5c4a74fdac766643fdbfbd2eaeb',
     },
 
-    '特大标题-0_Mobile_ZH': {
+    特大标题_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Semibold' },
         fontSize: 26,
         lineHeight: 40,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: 'f153b4fdf50677c79e07bd3530a42c54441049b2',
+        styleKey: '11669e746cc3a9f41e9f856549bc58326d092cee',
     },
     一级标题_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Semibold' },
@@ -571,7 +571,7 @@ const typographyDictionary = {
         lineHeight: 36,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: '9ce249b5c7bfadde65c7352a06027589f2456ac5',
+        styleKey: '4c147a2f02dee3b542e0495f943c28b677674633',
     },
     二级标题_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -579,7 +579,7 @@ const typographyDictionary = {
         lineHeight: 30,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: '8a6546c5ff33b92f0fa7e4d77d3c15e2965f0531',
+        styleKey: 'fe745d3290b9b009817381940d6ab9137e646398',
     },
     三级标题_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -587,7 +587,7 @@ const typographyDictionary = {
         lineHeight: 26,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: '26f3c1cf6108f8877f9bc366afe9679ca3171402',
+        styleKey: 'e36c1dcff68ea37d9b584e2212534f0ac1a509e1',
     },
     四级标题_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -595,7 +595,7 @@ const typographyDictionary = {
         lineHeight: 26,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: '34c5748b0a417539a6f823bacd0b3811d001d505',
+        styleKey: '82cb627ed551a871fb6e99ae5f69351134eea8d0',
     },
     辅助标题_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -603,7 +603,7 @@ const typographyDictionary = {
         lineHeight: 24,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: 'addf9e38fdc0939b4f1b6eed62273878e58119d6',
+        styleKey: '9e77a5fc64d6f1822a1e7664e3c25fdc34974097',
     },
     正文_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -611,7 +611,7 @@ const typographyDictionary = {
         lineHeight: 24,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: 'a18a512f0c97944421691f6764efd4345d417fc6',
+        styleKey: '2403fbfb07379ae8a8f0295acf34e24f646a0fa7',
     },
     正文大辅助_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -619,7 +619,7 @@ const typographyDictionary = {
         lineHeight: 22,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: 'ea03cc6a6e05ef1fee95779d53a5be1df8258b37',
+        styleKey: '0b6946cbd0a36740a4118dbb7afda49453fade92',
     },
     正文辅助_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -627,7 +627,7 @@ const typographyDictionary = {
         lineHeight: 22,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: '67d7fe3b961232098eea36d351d395aaa691a9eb',
+        styleKey: '2b29e93880bcf9b080cba3054d56148166eaa55b',
     },
     辅助_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -635,7 +635,7 @@ const typographyDictionary = {
         lineHeight: 20,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: '336fc9d0dae54fdfccdd2e3120b61b80da815e3a',
+        styleKey: '6bc0f647777e4b21779223dbc8052f723a0fd228',
     },
     小辅助_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -643,7 +643,7 @@ const typographyDictionary = {
         lineHeight: 20,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: '839429252dacd1cda2ef4c9ed8cb5d1b26c16480',
+        styleKey: 'bba4b582bc37ff8ccb8d251defb9fc3047469265',
     },
     次小辅助_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Medium' },
@@ -651,7 +651,7 @@ const typographyDictionary = {
         lineHeight: 16,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: '739d6a80237c673794a7a90e83c3218ea1915f0a',
+        styleKey: 'cfb6b9fb454941d5af0a56b9821186d7a0df4d63',
     },
     最小辅助_Mobile_ZH: {
         fontName: { family: 'PingFang SC', style: 'Regular' },
@@ -659,7 +659,7 @@ const typographyDictionary = {
         lineHeight: 16,
         language: Language.ZH,
         platform: Platform.Mobile,
-        styleKey: 'a1b3294ec95bdb06f55ca9abbfe62f699a6b1f44',
+        styleKey: '4e4c30c33da9251704e946e412cac5410218000b',
     },
 
     'Title-0_Mobile_EN': {
@@ -668,7 +668,7 @@ const typographyDictionary = {
         lineHeight: 40,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: 'eda380179c68f96c0731cf362eb923ad13b2ca73',
+        styleKey: '54af45c2fe434928c7b77cb5b50466ddcca1ae2a',
     },
     'Title-1_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Semibold' },
@@ -676,7 +676,7 @@ const typographyDictionary = {
         lineHeight: 36,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '9ae457259718e71a80d0a4668b83523cd29163e1',
+        styleKey: '738bd450de0ba09df881b6848efd290e6f723d2c',
     },
     'Title-2_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -684,7 +684,7 @@ const typographyDictionary = {
         lineHeight: 30,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '1611eaa6df3cb6c9327d9725d0d2cc51ad52fd7a',
+        styleKey: 'b09669fa4780e7dfa56025f344ad704fec756fb7',
     },
     'Title-3_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -692,7 +692,7 @@ const typographyDictionary = {
         lineHeight: 26,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '5763f3c5b9edba982586554e533ab1da03c54d4f',
+        styleKey: 'cab6659953b6006232ffe374f1cf5ab260f2a904',
     },
     'Title-4_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -700,15 +700,15 @@ const typographyDictionary = {
         lineHeight: 26,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '2372fe6023fdd3d90810b615a0b3b8bf0f4522b6',
+        styleKey: '5756b32ce2a1d62ae08034cdcef7696a6adfddbc',
     },
-    Headline_Mobile_EN: {
+    'Headline_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
         fontSize: 16,
         lineHeight: 24,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '421c19631f990150c2a67f6ef250d894d7883f57',
+        styleKey: '07b471f10b3faced04b3a5a41c3e09ca8a491971',
     },
     'Body-0_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -716,7 +716,7 @@ const typographyDictionary = {
         lineHeight: 24,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '7b3e6e2a112344f4c9df622c3b074b579076d4ec',
+        styleKey: 'f3356134a4300806bc4fbf38145308f34fc2db70',
     },
     'Body-1_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -724,7 +724,7 @@ const typographyDictionary = {
         lineHeight: 22,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '036d8bc9d371ea10c901ddbb0e31fc663a2a119b',
+        styleKey: 'e789456cd7962dce0161e3510915b9a7dc57dd27',
     },
     'Body-2_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -732,7 +732,7 @@ const typographyDictionary = {
         lineHeight: 22,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '330fe08996401272f4eedaa3ae6d40b2124d98ee',
+        styleKey: 'e2b8d2fee8a61347ed94d8e11dff4a176e4b553d',
     },
     'Caption-0_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -740,7 +740,7 @@ const typographyDictionary = {
         lineHeight: 20,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '89101c98c1679dc429e55b76cca794fe5d7efa30',
+        styleKey: 'a6765109001d3c6f2d82e2292a1e043aecc29589',
     },
     'Caption-1_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -748,7 +748,7 @@ const typographyDictionary = {
         lineHeight: 20,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: 'a0cbea28dc1f1a9978910d3312a289087883a6a1',
+        styleKey: 'f2d412a976bbf7e40bcc4615c47578d8bbc64dab',
     },
     'Caption-2_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Medium' },
@@ -756,7 +756,7 @@ const typographyDictionary = {
         lineHeight: 16,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: 'bd8f949cf3d693a949bae0f5cbb7d57b91461c13',
+        styleKey: 'e1b82f6ba4048bc09932b646587bea04d47c7cc6',
     },
     'Caption-3_Mobile_EN': {
         fontName: { family: 'SF Pro Text', style: 'Regular' },
@@ -764,6 +764,6 @@ const typographyDictionary = {
         lineHeight: 16,
         language: Language.EN,
         platform: Platform.Mobile,
-        styleKey: '8c1ee07fd1c8cfac51946eeac84ed18e61e7cb19',
+        styleKey: '0b211cb702dec992c1df5dbaaf7297e0ae180f30',
     },
 };

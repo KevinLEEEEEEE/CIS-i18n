@@ -219,7 +219,7 @@ const Toolbox = () => {
 
             <Block display="flex" paddingTop="16px" style={{ gap: '8px' }}>
                 <Button style={{ flex: '1' }} onClick={handleStylelintClick} kind={KIND.secondary}>
-                    Fotmat
+                    Format
                 </Button>
                 <Button style={{ flex: '2' }} onClick={handleTranslateClick}>
                     Translate
@@ -232,7 +232,7 @@ const Toolbox = () => {
                         Setting
                     </Button>
                 </Link>
-                <Link to="https://bytedance.larkoffice.com/docx/FSqgdvs3co71E1xspsjc7XXan3f" target="_blank" rel="noopener noreferrer">
+                <Link to="https://bytedance.larkoffice.com/docx/FSqgdvs3co71E1xspsjc7XXan3f#share-KDSAd12zMojjdlxDP1KcC0EGned" target="_blank" rel="noopener noreferrer">
                     <Button kind={KIND.tertiary} size={SIZE.compact}>
                         Help
                     </Button>
