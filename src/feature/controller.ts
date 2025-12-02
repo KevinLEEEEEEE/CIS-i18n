@@ -42,23 +42,23 @@ async function handleTranslate() {
     const autoStylelintMode = (await getClientStorageValue(StorageKey.AutoStylelintMode)) === SwitchMode.On;
 
     // 输出选中文本节点的 stylekey
-    // const node = figma.currentPage.selection[0];
+    const node = figma.currentPage.selection[0];
 
-    // if (node && node.type === 'TEXT') {
-    //     const styleId = node.textStyleId;
-    //     if (styleId && typeof styleId === 'string') {
-    //         const style = await figma.getStyleByIdAsync(styleId);
-    //         if (style) {
-    //             console.log('Style Key:', style.key);
-    //         } else {
-    //             console.log('No style found for this text node.');
-    //         }
-    //     } else {
-    //         console.log('This text node does not use a shared style.');
-    //     }
-    // } else {
-    //     console.log('Selected node is not a TextNode');
-    // }
+    if (node && node.type === 'TEXT') {
+        const styleId = node.textStyleId;
+        if (styleId && typeof styleId === 'string') {
+            const style = await figma.getStyleByIdAsync(styleId);
+            if (style) {
+                console.log('Style Key:', style.key);
+            } else {
+                console.log('No style found for this text node.');
+            }
+        } else {
+            console.log('This text node does not use a shared style.');
+        }
+    } else {
+        console.log('Selected node is not a TextNode');
+    }
 
     processNodesTasks([...figma.currentPage.selection], true, autoPolishMode, autoStylelintMode);
 }

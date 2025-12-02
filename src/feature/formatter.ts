@@ -269,6 +269,7 @@ function formatContent(inputString: string, nodeName: string, parentNodeName: st
         'Menu-title',
         '标题文本',
         'ModalView_title',
+        'Tag-text'
     ]);
 
     const titleCaseParentNodenames = new Set(['[D] Tag_Avatar_Person', '[M] Tag_Avatar_Person']);
