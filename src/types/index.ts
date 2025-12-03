@@ -122,7 +122,6 @@ export enum StorageKey {
     GoogleAccessTokenExpireDate = 'googleAccessTokenExpireDate',
     GoogleRefreshToken = 'googleRefreshToken',
     isFirstOpen = 'isFirstOpen',
-    TranslationCache = 'translationCache',
 }
 
 export enum Language {

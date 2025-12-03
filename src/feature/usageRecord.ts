@@ -16,10 +16,7 @@ async function incrementCounter(counterName: string, value: number = 1): Promise
         const response = await fetch(
             `${BACKENDLESS_BASE_URL}/${counterName}/incrementby/get?value=${value}`,
             {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                method: 'GET'
             }
         );
 
@@ -27,7 +24,8 @@ async function incrementCounter(counterName: string, value: number = 1): Promise
             throw new Error(`埋点更新失败: ${response.statusText}`);
         }
 
-        const updatedValue = await response.json();
+        const body = await response.text();
+        const updatedValue = JSON.parse(body);
         console.log(`[UsageRecord] Successfully update key: ${counterName}, updated value: ${updatedValue}`);
         return updatedValue; // 确保返回更新后的值
     } catch (error) {

@@ -1,5 +1,4 @@
-import { Language, StorageKey } from '../types'
-import { getClientStorageValue, setLocalStorage } from '../utils/utility'
+import { Language } from '../types'
 import md5 from 'md5'
 
 type Entry = { v: string; e: number }
@@ -14,12 +13,9 @@ function k(provider: string, lang: Language, termbase: boolean, text: string) {
 export async function getTranslationFromCache(provider: string, lang: Language, termbase: boolean, text: string) {
     const key = k(provider, lang, termbase, text)
     const hit = mem.get(key)
-    if (hit && hit.e > Date.now()) return hit.v
-    const store = (await getClientStorageValue(StorageKey.TranslationCache)) as Record<string, Entry>
-    const entry = store[key]
-    if (entry && entry.e > Date.now()) {
-        mem.set(key, entry)
-        return entry.v
+    if (hit && hit.e > Date.now()) {
+        console.info('[Translate] CacheHit: using cached result', { provider, lang, termbase, key: md5(text), expiresAt: new Date(hit.e).toISOString() })
+        return hit.v
     }
     return undefined
 }
@@ -28,11 +24,10 @@ export async function setTranslationToCache(provider: string, lang: Language, te
     const key = k(provider, lang, termbase, text)
     const entry = { v: value, e: Date.now() + ttlMs }
     mem.set(key, entry)
-    const store = (await getClientStorageValue(StorageKey.TranslationCache)) as Record<string, Entry>
-    store[key] = entry
-    const keys = Object.keys(store)
-    if (keys.length > MAX) delete store[keys[0]]
-    await setLocalStorage(StorageKey.TranslationCache, store)
+    if (mem.size > MAX) {
+        const first = mem.keys().next().value as string | undefined
+        if (first) mem.delete(first)
+    }
 }
 
 export function dedupe(texts: string[]) {

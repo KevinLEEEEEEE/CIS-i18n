@@ -93,9 +93,10 @@ export async function translateContentByModal(
     const out: string[] = new Array(uniq.length)
     const miss: string[] = []
     const missIdx: number[] = []
+    let hitCount = 0
     for (let i = 0; i < uniq.length; i++) {
       const c = await getTranslationFromCache(provider, targetLanguage, termbaseMode, uniq[i])
-      if (typeof c === 'string') out[i] = c
+      if (typeof c === 'string') { out[i] = c; hitCount++ }
       else { miss.push(uniq[i]); missIdx.push(i) }
     }
     for (let i = 0; i < miss.length; i += BATCH_SIZE) {
@@ -107,15 +108,17 @@ export async function translateContentByModal(
         setTranslationToCache(provider, targetLanguage, termbaseMode, uniq[idx], out[idx], TTL_MS)
       })
     }
+    console.info('[Translate] CacheHit Summary', { provider, hits: hitCount, total: uniq.length })
     return indexes.map(i => out[i] || '')
   }
 
   async function fromCacheOrFetchSingle(fn: (q: string) => Promise<string>, provider: string) {
     const out: string[] = new Array(uniq.length)
     const missIdx: number[] = []
+    let hitCount = 0
     for (let i = 0; i < uniq.length; i++) {
       const c = await getTranslationFromCache(provider, targetLanguage, termbaseMode, uniq[i])
-      if (typeof c === 'string') out[i] = c
+      if (typeof c === 'string') { out[i] = c; hitCount++ }
       else missIdx.push(i)
     }
     for (const idx of missIdx) {
@@ -123,6 +126,7 @@ export async function translateContentByModal(
       out[idx] = typeof v === 'string' ? v : ''
       await setTranslationToCache(provider, targetLanguage, termbaseMode, uniq[idx], out[idx], TTL_MS)
     }
+    console.info('[Translate] CacheHit Summary', { provider, hits: hitCount, total: uniq.length })
     return indexes.map(i => out[i] || '')
   }
 
