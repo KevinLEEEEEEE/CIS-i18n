@@ -25,6 +25,7 @@ import {
     TranslationModal,
 } from '../../types';
 import { googleOauthClientID } from '../../../config';
+import './setting.css';
 
 const Setting = () => {
     // 状态管理
@@ -136,7 +137,7 @@ const Setting = () => {
             emit<SetAccessTokenHandler>('SET_ACCESS_TOKEN', code);
         } else {
             console.error('[Error] Authorization code is empty');
-            toaster.negative('Authorization code is empty. Please enter a valid code.');
+            toaster.negative('Authorization code is required, please enter a valid code');
         }
     };
 
@@ -196,18 +197,18 @@ const Setting = () => {
         <Block>
             <Tabs activeKey={activeTab} onChange={({ activeKey }) => setActiveTab(activeKey)} activateOnFocus>
                 <Tab title="General">
-                    <Block style={{ height: 320 }}>
-                        <FormControl label="Translation modal">
+                    <Block className="tab-content" style={{ height: 320 }}>
+                        <FormControl label="Translation provider">
                             <Select
                                 clearable={false}
                                 options={[
-                                    { label: 'GoogleAdvanced', id: TranslationModal.GoogleAdvanced, disabled: isGoogleAdvancedDisabled },
-                                    { label: 'GoogleBasic', id: TranslationModal.GoogleBasic },
-                                    { label: 'GoogleFree', id: TranslationModal.GoogleFree },
+                                    { label: 'Google (Advanced)', id: TranslationModal.GoogleAdvanced, disabled: isGoogleAdvancedDisabled },
+                                    { label: 'Google (Basic)', id: TranslationModal.GoogleBasic },
+                                    { label: 'Google (Free)', id: TranslationModal.GoogleFree },
                                     { label: 'Baidu', id: TranslationModal.Baidu },
                                 ]}
                                 value={selectedTransModal}
-                                placeholder="Please select"
+                                placeholder="Select…"
                                 onChange={({ value }) => handleTransModalChange(value)}
                                 onFocus={() => {
                                     emit<RequestLocalStorageHandler>('REQUEST_LOCAL_STORAGE', {
@@ -217,7 +218,7 @@ const Setting = () => {
                             />
                         </FormControl>
 
-                        <FormControl label="Term base">
+                        <FormControl label="Glossary">
                             <RadioGroup
                                 value={termbase}
                                 onChange={(e) => handleTermbaseChange(e.currentTarget.value)}
@@ -228,7 +229,7 @@ const Setting = () => {
                             </RadioGroup>
                         </FormControl>
 
-                        <FormControl label="Auto polish">
+                        <FormControl label="Auto‑polish">
                             <RadioGroup
                                 value={autoPolishing}
                                 onChange={(e) => handleAutoPolishingChange(e.currentTarget.value)}
@@ -239,7 +240,7 @@ const Setting = () => {
                             </RadioGroup>
                         </FormControl>
 
-                        <FormControl label="Auto format">
+                        <FormControl label="Auto‑format">
                             <RadioGroup
                                 value={autoStylelint}
                                 onChange={(e) => handleAutoStylelintChange(e.currentTarget.value)}
@@ -252,13 +253,13 @@ const Setting = () => {
                     </Block>
                 </Tab>
 
-                <Tab title="Accounts">
-                    <Block style={{ height: 320 }}>
+                <Tab title="API Keys">
+                    <Block className="tab-content" style={{ height: 320 }}>
                         <FormControl label="Google">
                             <Input
                                 value={getMaskedValue(googleAPIKey)}
                                 onChange={(e) => setGoogleAPIKey(e.target.value)}
-                                placeholder="Enter key"
+                                placeholder="Enter API key"
                                 clearOnEscape
                             />
                         </FormControl>
@@ -268,13 +269,13 @@ const Setting = () => {
                                 <Input
                                     value={getMaskedValue(baiduAppID)}
                                     onChange={(e) => setBaiduAppID(e.target.value)}
-                                    placeholder="Enter AppID"
+                                    placeholder="Enter App ID"
                                     clearOnEscape
                                 />
                                 <Input
                                     value={getMaskedValue(baiduKey)}
                                     onChange={(e) => setBaiduKey(e.target.value)}
-                                    placeholder="Enter Key"
+                                    placeholder="Enter API key"
                                     clearOnEscape
                                 />
                             </Block>
@@ -284,17 +285,17 @@ const Setting = () => {
                             <Input
                                 value={getMaskedValue(cozeAPIKey)}
                                 onChange={(e) => setCozeAPIKey(e.target.value)}
-                                placeholder="Enter key"
+                                placeholder="Enter API key"
                                 clearOnEscape
                             />
                         </FormControl>
                     </Block>
                 </Tab>
 
-                <Tab title="Google Oauth">
-                    <Block style={{ height: 328 }}>
+                <Tab title="Google OAuth">
+                    <Block className="tab-content" style={{ height: 328 }}>
                         <ParagraphMedium marginTop="0px" marginBottom="12px">
-                            Step 1: Please click the "Authorize with Google" button to authorize.
+                            Step 1: Click "Authorize with Google" to sign in
                         </ParagraphMedium>
 
                         <Button
@@ -306,14 +307,14 @@ const Setting = () => {
                         </Button>
 
                         <ParagraphMedium marginBottom="12px">
-                            Step 2: Paste authorization code here and click Submit Code button.
+                            Step 2: Paste the authorization code and click "Submit Code"
                         </ParagraphMedium>
 
                         <Block display="flex" flexDirection="column" width="100%">
                             <Input
                                 inputRef={inputRef}
                                 id="authCodeInput"
-                                placeholder="Enter authorization code"
+                                placeholder="Paste authorization code"
                                 overrides={{
                                     Input: {
                                         style: {
@@ -364,9 +365,9 @@ const Setting = () => {
             </Block>
 
             <Modal onClose={handleCancelChange} isOpen={isModalOpen}>
-                <ModalHeader>Change Translation Model</ModalHeader>
+                <ModalHeader>Switch Translation Model</ModalHeader>
                 <ModalBody>
-                    Google access token configured successfully. Do you want to switch the translation model to Google Advanced?
+                    Google access token configured successfully, switch the translation model to Google Advanced?
                 </ModalBody>
                 <ModalFooter>
                     <ModalButton kind={KIND.tertiary} onClick={handleCancelChange}>

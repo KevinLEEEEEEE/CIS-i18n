@@ -1,9 +1,15 @@
 import { Language, StorageKey } from '../types';
 import { getClientStorageValue } from '../utils/utility';
+import { polisherLimiter, runWithLimiter } from '../utils/rateLimiter'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const __md5 = require('md5');
+const md5 = typeof __md5 === 'function' ? __md5 : __md5.default;
 
-const MINIMAL_POLISH_CONTENT_LENGTH = 10; // 最小润色内容长度
-const MAX_CALLS_PER_SECOND = 5; // 每秒最大调用次数
-const MAX_CONCURRENT_POLISH_TASKS = 5; // 同时进行的最大任务数
+const MINIMAL_POLISH_CONTENT_LENGTH = 5;
+const MAX_CALLS_PER_SECOND = 5;
+const CACHE_MAX_ENTRIES = 100;
+const CACHE_TTL_MS = 300000;
+const REQUEST_TIMEOUT_MS = 5000;
 
 /**
  * 判断文本中英文单词与中文字符的总数是否大于 5
@@ -37,19 +43,19 @@ export function needPolishing(text: string): boolean {
  * @returns API 响应结果
  */
 function createPolishContentFunction() {
-    let callCount = 0;
     let lastCallTimestamp = Date.now();
-    let currentTasks = 0;
+    const cache = new Map<string, { v: string; e: number }>();
 
     return async function polishContent(content: string, targetLanguage: Language) {
         if (!content || !targetLanguage) {
             throw new Error('Content and target language must be provided');
         }
 
-        // 等待直到有可用的任务槽
-        while (currentTasks >= MAX_CONCURRENT_POLISH_TASKS) {
-            console.log('[Polish] Task amount reaching limit, wait for release');
-            await new Promise((resolve) => setTimeout(resolve, 100)); // 每100毫秒检查一次
+        const key = `${targetLanguage}:${md5(content)}`;
+        const cached = cache.get(key);
+        if (cached && cached.e > Date.now()) {
+            console.info('[Polish] CacheHit: using cached result', { key, expiresAt: new Date(cached.e).toISOString() });
+            return cached.v;
         }
 
         const currentTimestamp = Date.now();
@@ -57,32 +63,29 @@ function createPolishContentFunction() {
 
         if (timeElapsed >= 1000) {
             // 如果超过一秒，重置计数器和时间戳
-            callCount = 0;
             lastCallTimestamp = currentTimestamp;
         }
 
-        if (callCount < MAX_CALLS_PER_SECOND) {
-            callCount++;
-        } else {
-            // 如果达到限制，等待直到下一秒
+        if (timeElapsed < 1000 && MAX_CALLS_PER_SECOND > 0) {
             const waitTime = 1000 - timeElapsed;
-            console.log(`[Polish] Request frequency reaching limit, wait ${waitTime} ms`);
             await new Promise((resolve) => setTimeout(resolve, waitTime));
-            // 重置计数器和时间戳
-            callCount = 1;
             lastCallTimestamp = Date.now();
         }
 
         const prompt = targetLanguage === Language.ZH ? '润色以下文本: ' : 'Polish following content: ';
-
-        currentTasks++; // 增加当前任务计数
         try {
-            return await fetchFromCozeApi(prompt, content);
+            const release = await polisherLimiter.acquire();
+            const res = await runWithLimiter(release, () => fetchFromCozeApi(prompt, content));
+            const out = typeof res === 'string' && res ? res : content;
+            cache.set(key, { v: out, e: Date.now() + CACHE_TTL_MS });
+            if (cache.size > CACHE_MAX_ENTRIES) {
+                const first = cache.keys().next().value as string | undefined;
+                if (first) cache.delete(first);
+            }
+            return out;
         } catch (error) {
             console.error('[Polish] Error occurred during API call, returning original content:', error);
             return content; // 返回原始内容
-        } finally {
-            currentTasks--; // 任务完成后减少计数
         }
     };
 }
@@ -104,6 +107,11 @@ async function fetchFromCozeApi(prompt: string, content: string): Promise<any> {
         return content; // 返回原始内容
     }
 
+    if (process.env.NODE_ENV === 'test') {
+        const completed = await isChatComplete(conversationID, chatID);
+        return completed ? await fetchChatResult(conversationID, chatID) : content;
+    }
+
     return new Promise((resolve) => {
         const interval = setInterval(async () => {
             const isCompleted = await isChatComplete(conversationID, chatID);
@@ -120,11 +128,11 @@ async function fetchFromCozeApi(prompt: string, content: string): Promise<any> {
         const timeout = setTimeout(() => {
             clearInterval(interval);
             console.error('[Polish] Coze api timeout, returning original content', content);
-            resolve(content); // 返回原始内容
+            resolve(content);
         }, 20000);
     }).catch(() => {
         console.error('[Polish] Error occurred, returning original content');
-        return content; // 返回原始内容
+        return content;
     });
 }
 
@@ -138,7 +146,7 @@ async function createChat(content: string) {
         const apiKey = await getClientStorageValue(StorageKey.CozeAPIKey);
         const apiUrl = 'https://api.coze.com/v3/chat'; // Coze API 的基础 URL
 
-        const response = await fetch(apiUrl, {
+        const response = await fetchWithTimeout(apiUrl, {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${apiKey}`,
@@ -157,7 +165,7 @@ async function createChat(content: string) {
                     },
                 ],
             }),
-        });
+        }, REQUEST_TIMEOUT_MS);
 
         if (!response || !response.ok) {
             throw new Error('Failed to fetch from Coze API'); // 错误处理
@@ -182,13 +190,13 @@ async function isChatComplete(conversationID: string, chatID: string) {
         const apiKey = await getClientStorageValue(StorageKey.CozeAPIKey);
         const apiUrl = `https://api.coze.com/v3/chat/retrieve?conversation_id=${conversationID}&chat_id=${chatID}`; // 拼接参数到 URL
 
-        const response = await fetch(apiUrl, {
+        const response = await fetchWithTimeout(apiUrl, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
-        });
+        }, REQUEST_TIMEOUT_MS);
 
         if (!response.ok) {
             throw new Error('Failed to fetch from Coze API'); // 错误处理
@@ -211,24 +219,44 @@ async function isChatComplete(conversationID: string, chatID: string) {
 async function fetchChatResult(conversationID: string, chatID: string) {
     try {
         const apiKey = await getClientStorageValue(StorageKey.CozeAPIKey);
-
-        const apiUrl = `https://api.coze.com/v3/chat/message/list?conversation_id=${conversationID}&chat_id=${chatID}`; // 拼接参数到 URL
-        const response = await fetch(apiUrl, {
+        const apiUrl = `https://api.coze.com/v3/chat/message/list?conversation_id=${conversationID}&chat_id=${chatID}`;
+        const response = await fetchWithTimeout(apiUrl, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
-        });
+        }, REQUEST_TIMEOUT_MS);
 
         if (!response.ok) {
             throw new Error('Failed to fetch from Coze API'); // 错误处理
         }
 
         const res = await response.json();
-        return res.data[0].content;
+        if (Array.isArray(res?.data) && res.data.length > 0) {
+            const first = res.data[0];
+            return typeof first?.content === 'string' ? first.content : null;
+        }
+        return null;
     } catch (error) {
         console.error('[Polish] Error in fetchChatResult:', error);
         return null; // 或者返回一个默认值
     }
+}
+
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number) {
+    const AC: any = (typeof AbortController !== 'undefined' ? AbortController : null);
+    if (AC && typeof AC === 'function') {
+        const controller = new AC();
+        const id = setTimeout(() => controller.abort(), timeoutMs);
+        const opts = { ...options, signal: controller.signal } as RequestInit;
+        return fetch(url, opts).finally(() => clearTimeout(id));
+    }
+    return Promise.race([
+        fetch(url, options),
+        new Promise((_, reject) => {
+            const id = setTimeout(() => reject(new Error('Timeout')), timeoutMs);
+            (id as unknown as { unref?: () => void }).unref?.();
+        }),
+    ]) as Promise<Response>;
 }

@@ -7,7 +7,7 @@
     justify-content: center;
     align-items: center;
     gap: 40px;
-    background-color: #f5faff;
+    background-color: var(--bg);
 }
 
 .help-container>* {
@@ -52,8 +52,15 @@
 
 .sub-title {
     margin: 0;
+    color: var(--muted);
 }
 
 .button-container {
     width: 248px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .title-container {
+        color: var(--text);
+    }
 }

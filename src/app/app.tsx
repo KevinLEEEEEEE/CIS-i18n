@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { emit, on } from '@create-figma-plugin/utilities';
 
 import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { Client as Styletron } from 'styletron-engine-monolithic';
 import { Provider as StyletronProvider } from 'styletron-react';
-import { LightTheme, BaseProvider } from 'baseui';
+import { LightTheme, DarkTheme, BaseProvider } from 'baseui';
 import { toaster, ToasterContainer } from 'baseui/toast';
 import './global.css';
 
@@ -93,24 +93,45 @@ const App = () => {
   );
 };
 
-const AppWrapper = () => (
-  <StyletronProvider value={engine}>
-    <BaseProvider theme={LightTheme}>
-      <MemoryRouter>
-        <App />
-        <ToasterContainer
-          autoHideDuration={2000}
-          overrides={{
-            Root: {
-              style: {
-                zIndex: 9999, // 确保 ToasterContainer 在最顶层
+const AppWrapper = () => {
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const update = () => {
+      const figmaDark = document.body.classList.contains('figma-dark');
+      setIsDark(figmaDark || mql.matches);
+    };
+    update();
+    const handleChange = () => update();
+    mql.addEventListener('change', handleChange);
+    const mo = new MutationObserver(handleChange);
+    mo.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => {
+      mql.removeEventListener('change', handleChange);
+      mo.disconnect();
+    };
+  }, []);
+
+  return (
+    <StyletronProvider value={engine}>
+      <BaseProvider theme={isDark ? DarkTheme : LightTheme}>
+        <MemoryRouter>
+          <App />
+          <ToasterContainer
+            autoHideDuration={2000}
+            overrides={{
+              Root: {
+                style: {
+                  zIndex: 9999,
+                },
               },
-            },
-          }}
-        />
-      </MemoryRouter>
-    </BaseProvider>
-  </StyletronProvider>
-);
+            }}
+          />
+        </MemoryRouter>
+      </BaseProvider>
+    </StyletronProvider>
+  );
+};
 
 export default AppWrapper;

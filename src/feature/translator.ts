@@ -3,6 +3,8 @@ import { AjaxRequestHandler, Language, StorageKey, TranslationModal } from '../t
 import md5 from 'md5';
 import { getClientStorageValue } from '../utils/utility';
 import { googleTranslateProjectID, googleTranslateLocations, googleTranslateGlossaryID } from '../../config';
+import { translatorLimiter, runWithLimiter } from '../utils/rateLimiter'
+import { getTranslationFromCache, setTranslationToCache, dedupe } from './cache'
 
 const CALL_LIMIT_PER_SECOND = 10; // 每秒请求的翻译次数上限
 const CALL_INTERVAL_PER_SECOND = 1000 / CALL_LIMIT_PER_SECOND; // 每次调用的间隔时间（毫秒）
@@ -83,11 +85,52 @@ export async function translateContentByModal(
   }
 
   // 定义翻译策略
+  const BATCH_SIZE = 50
+  const TTL_MS = 24 * 60 * 60 * 1000
+  const { uniq, indexes } = dedupe(textArray)
+
+  async function fromCacheOrFetchArray(fn: (q: string[]) => Promise<string[]>, provider: string) {
+    const out: string[] = new Array(uniq.length)
+    const miss: string[] = []
+    const missIdx: number[] = []
+    for (let i = 0; i < uniq.length; i++) {
+      const c = await getTranslationFromCache(provider, targetLanguage, termbaseMode, uniq[i])
+      if (typeof c === 'string') out[i] = c
+      else { miss.push(uniq[i]); missIdx.push(i) }
+    }
+    for (let i = 0; i < miss.length; i += BATCH_SIZE) {
+      const chunk = miss.slice(i, i + BATCH_SIZE)
+      const res = await fn(chunk)
+      res.forEach((v, j) => {
+        const idx = missIdx[i + j]
+        out[idx] = v || ''
+        setTranslationToCache(provider, targetLanguage, termbaseMode, uniq[idx], out[idx], TTL_MS)
+      })
+    }
+    return indexes.map(i => out[i] || '')
+  }
+
+  async function fromCacheOrFetchSingle(fn: (q: string) => Promise<string>, provider: string) {
+    const out: string[] = new Array(uniq.length)
+    const missIdx: number[] = []
+    for (let i = 0; i < uniq.length; i++) {
+      const c = await getTranslationFromCache(provider, targetLanguage, termbaseMode, uniq[i])
+      if (typeof c === 'string') out[i] = c
+      else missIdx.push(i)
+    }
+    for (const idx of missIdx) {
+      const v = await fn(uniq[idx])
+      out[idx] = typeof v === 'string' ? v : ''
+      await setTranslationToCache(provider, targetLanguage, termbaseMode, uniq[idx], out[idx], TTL_MS)
+    }
+    return indexes.map(i => out[i] || '')
+  }
+
   const translationStrategies = {
-    [TranslationModal.GoogleAdvanced]: () => translator(translateByGoogleAdvanced, textArray, targetLanguage, termbaseMode),
-    [TranslationModal.GoogleBasic]: () => translator(translateByGoogleBasic, textArray, targetLanguage, termbaseMode),
-    [TranslationModal.GoogleFree]: () => Promise.all(textArray.map((text) => translator(translateByGoogleFree, text, targetLanguage, termbaseMode))),
-    [TranslationModal.Baidu]: () => translator(translateByBaidu, textArray, targetLanguage, termbaseMode),
+    [TranslationModal.GoogleAdvanced]: () => fromCacheOrFetchArray((q) => translator(translateByGoogleAdvanced, q, targetLanguage, termbaseMode) as Promise<string[]>, 'GoogleAdvanced'),
+    [TranslationModal.GoogleBasic]: () => fromCacheOrFetchArray((q) => translator(translateByGoogleBasic, q, targetLanguage, termbaseMode) as Promise<string[]>, 'GoogleBasic'),
+    [TranslationModal.GoogleFree]: () => fromCacheOrFetchSingle((t) => translator(translateByGoogleFree, t, targetLanguage, termbaseMode) as Promise<string>, 'GoogleFree'),
+    [TranslationModal.Baidu]: () => fromCacheOrFetchArray((q) => translator(translateByBaidu, q, targetLanguage, termbaseMode) as Promise<string[]>, 'Baidu'),
   };
 
   // 获取对应的翻译函数
@@ -107,7 +150,7 @@ export async function translateContentByModal(
  * @param targetLanguage - 目标语言
  * @returns 翻译结果
  */
-function translator(
+async function translator(
   requestFunction: (
     content: string | string[],
     targetLanguage: Language,
@@ -132,13 +175,14 @@ function translator(
     lastRequestTime = Date.now();
 
     try {
-      return await requestFunction(content, targetLanguage, sourceLanguage, termbaseMode);
+      const release = await translatorLimiter.acquire()
+      return await runWithLimiter(release, () => requestFunction(content, targetLanguage, sourceLanguage, termbaseMode))
     } catch (error) {
       handleError(error, 'Request failed in translator');
     }
   };
 
-  return fetchWithRateLimit();
+  return await fetchWithRateLimit();
 }
 
 /**

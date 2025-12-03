@@ -1,0 +1,46 @@
+:root {
+    --bg: #f4f4f9;
+    --surface: #ffffff;
+    --text: #0f1216;
+    --primary: #256eff;
+    --button-bg: var(--primary);
+    --button-text: #ffffff;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+.url-display {
+    padding: 20px;
+    background-color: var(--surface);
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.baseui-button {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0f1216;
+        --surface: #1c1f24;
+        --text: #e6edf3;
+        --primary: #4c8dff;
+        --button-bg: var(--primary);
+        --button-text: #0f1216;
+    }
+}

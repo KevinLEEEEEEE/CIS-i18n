@@ -20,6 +20,16 @@ export interface UpdateTotalTasksHandler extends EventHandler {
     handler: (totalAmount: number) => void;
 }
 
+export interface UpdateStageTotalsHandler extends EventHandler {
+    name: 'UPDATE_STAGE_TOTALS';
+    handler: (stage: 'translate' | 'polish' | 'format', total: number) => void;
+}
+
+export interface StageStepCompleteHandler extends EventHandler {
+    name: 'STAGE_STEP_COMPLETE';
+    handler: (stage: 'translate' | 'polish' | 'format', done: number) => void;
+}
+
 export interface TaskCompleteHandler extends EventHandler {
     name: 'TASK_COMPLETE';
     handler: () => void;
@@ -112,6 +122,7 @@ export enum StorageKey {
     GoogleAccessTokenExpireDate = 'googleAccessTokenExpireDate',
     GoogleRefreshToken = 'googleRefreshToken',
     isFirstOpen = 'isFirstOpen',
+    TranslationCache = 'translationCache',
 }
 
 export enum Language {

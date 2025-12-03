@@ -1,7 +1,8 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} **/
 module.exports = {
+  preset: 'ts-jest',
   testEnvironment: 'node',
-  transform: {
-    '^.+.tsx?$': ['ts-jest', {}],
-  },
+  testMatch: ['**/__tests__/**/*.test.ts'],
+  moduleNameMapper: {
+    '^@create-figma-plugin/utilities$': '<rootDir>/__tests__/mocks/utilities.ts'
+  }
 };

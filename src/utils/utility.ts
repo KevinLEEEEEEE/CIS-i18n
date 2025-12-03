@@ -10,12 +10,6 @@ import {
     SwitchMode,
 } from '../types';
 import { emit, on } from '@create-figma-plugin/utilities';
-import {
-    googleApiKey,
-    baiduAppId,
-    baiduKey,
-    cozeApiKey
-} from '../../config';
 
 const cache: { [key in StorageKey]?: any } = {};
 
@@ -28,20 +22,22 @@ const defaultValues: { [key in StorageKey]: any } = {
     [StorageKey.Termbase]: SwitchMode.On,
     [StorageKey.AutoStylelintMode]: SwitchMode.On,
     [StorageKey.AutoPolishing]: SwitchMode.On,
-    [StorageKey.GoogleAPIKey]: googleApiKey,
-    [StorageKey.BaiduAppID]: baiduAppId,
-    [StorageKey.BaiduKey]: baiduKey,
-    [StorageKey.CozeAPIKey]: cozeApiKey,
+    [StorageKey.GoogleAPIKey]: '',
+    [StorageKey.BaiduAppID]: '',
+    [StorageKey.BaiduKey]: '',
+    [StorageKey.CozeAPIKey]: '',
     [StorageKey.GoogleAccessToken]: '',
     [StorageKey.GoogleAccessTokenExpireDate]: '',
     [StorageKey.GoogleRefreshToken]: '',
     [StorageKey.isFirstOpen]: true,
+    [StorageKey.TranslationCache]: {},
 };
 
 export async function setLocalStorage(key: StorageKey, value: any) {
     cache[key] = value;
-
-    await figma.clientStorage.setAsync(key, value);
+    if (typeof figma !== 'undefined' && figma.clientStorage && typeof figma.clientStorage.setAsync === 'function') {
+        await figma.clientStorage.setAsync(key, value);
+    }
 }
 
 export async function getClientStorageValue(key: StorageKey) {
@@ -50,7 +46,9 @@ export async function getClientStorageValue(key: StorageKey) {
         return cache[key];
     }
 
-    const value = await figma.clientStorage.getAsync(key);
+    const value = (typeof figma !== 'undefined' && figma.clientStorage && typeof figma.clientStorage.getAsync === 'function')
+        ? await figma.clientStorage.getAsync(key)
+        : undefined;
     const result = value !== undefined ? value : (defaultValues[key] !== undefined ? defaultValues[key] : '');
 
     // 缓存结果

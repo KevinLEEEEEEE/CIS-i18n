@@ -4,33 +4,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIS-i18n Plugin Oauth</title>
+    <title>CIS-i18n Plugin OAuth</title>
     <link rel="stylesheet" href="https://unpkg.com/baseui@latest/dist/baseui.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f9;
-        }
-
-        .url-display {
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+    <link rel="stylesheet" href="./index.css">
 </head>
 
 <body>
+    <script>
+        (function () {
+            var levelOrder = { debug: 10, info: 20, log: 20, warn: 30, error: 40 };
+            var currentLevel = 'debug';
+            function getLS() { try { return window.localStorage } catch (e) { return null } }
+            (function () { var ls = getLS(); if (ls) { try { var saved = ls.getItem('LOG_LEVEL'); if (saved && levelOrder[saved] !== undefined) { currentLevel = saved } } catch (e) { } } })();
+            function shouldPrint(level) { return levelOrder[level] >= levelOrder[currentLevel] }
+            function isoNow() { return new Date().toISOString() }
+            var original = { debug: console.debug.bind(console), info: console.info.bind(console), log: console.log.bind(console), warn: console.warn.bind(console), error: console.error.bind(console) };
+            function extractContext(args) {
+                var stage = 'General', step = '', message = '', rest = [];
+                if (args.length > 0 && typeof args[0] === 'string') {
+                    var s = String(args[0]);
+                    var m = s.match(/^\[([^\]]+)\]\s*(.*)$/);
+                    if (m) {
+                        stage = m[1];
+                        var remaining = m[2] || '';
+                        if (remaining.indexOf(':') >= 0) { var idx = remaining.indexOf(':'); step = remaining.slice(0, idx).trim(); message = remaining.slice(idx + 1).trim(); }
+                        else { message = remaining; }
+                        for (var i = 1; i < args.length; i++) rest.push(args[i]);
+                    } else {
+                        var str = s;
+                        if (str.indexOf(':') >= 0) { var idx2 = str.indexOf(':'); step = str.slice(0, idx2).trim(); message = str.slice(idx2 + 1).trim(); }
+                        else { message = str; }
+                        for (var j = 1; j < args.length; j++) rest.push(args[j]);
+                    }
+                } else { rest = Array.prototype.slice.call(args); }
+                return { stage: stage, step: step, message: message, rest: rest };
+            }
+            function format(level, args) {
+                var ctx = extractContext(args);
+                var segs = ['[' + isoNow() + ']', '[' + level.toUpperCase() + ']', '[Stage: ' + ctx.stage + ']'];
+                if (ctx.step) segs.push('[Step: ' + ctx.step + ']');
+                var head = segs.join(' ');
+                var msg = ctx.message ? (' Message: ' + ctx.message) : '';
+                var line = head + msg;
+                return [line].concat(ctx.rest);
+            }
+            function normalizeErrors(args) {
+                return Array.prototype.map.call(args, function (a) { if (a && a.stack) { return { name: a.name, message: a.message, stack: a.stack } } return a });
+            }
+            function print(level, args) { if (!shouldPrint(level)) return; if (level === 'error') { original.error.apply(console, format(level, normalizeErrors(args))); return } original[level].apply(console, format(level, args)) }
+            console.debug = function () { print('debug', Array.prototype.slice.call(arguments)) };
+            console.info = function () { print('info', Array.prototype.slice.call(arguments)) };
+            console.log = function () { print('log', Array.prototype.slice.call(arguments)) };
+            console.warn = function () { print('warn', Array.prototype.slice.call(arguments)) };
+            console.error = function () { print('error', Array.prototype.slice.call(arguments)) };
+            window.addEventListener('error', function (event) { var payload = { message: event.message, filename: event.filename, lineno: event.lineno, colno: event.colno, error: event.error && event.error.stack ? { name: event.error.name, message: event.error.message, stack: event.error.stack } : event.error }; print('error', ['[GlobalError]', payload]) });
+            window.addEventListener('unhandledrejection', function (event) { var r = event.reason; var payload = r && r.stack ? { name: r.name, message: r.message, stack: r.stack } : r; print('error', ['[UnhandledRejection]', payload]) });
+        })();
+    </script>
     <div class="url-display">
-        <h1>当前浏览器的 URL 是:</h1>
+        <h1>当前浏览器的 URL：</h1>
         <p id="current-url"></p>
-        <button class="baseui-button">Click Me</button>
+        <button class="baseui-button">复制 URL</button>
     </div>
 
     <script>

@@ -80,7 +80,7 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
     }
 
     if (!needTranslate && !needPolish && !needFormat) {
-        emitWarning('No tasks to execute');
+        emitWarning('No tasks to run');
         return;
     }
 
@@ -92,6 +92,9 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
     const startTime = new Date();
     const [targetLanguage, displayMode, platform, translationModal] = await getSettings();
     const tasksMonitor: Promise<void>[] = [];
+    let translateDone = 0
+    let polishDone = 0
+    let formatDone = 0
 
     console.log(`[Task begin] TargetLang: ${targetLanguage}, DisplayMode: ${displayMode}, Platform: ${platform}, TransModal: ${translationModal}`);
 
@@ -109,6 +112,12 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
     // 埋点记录本次操作影响的节点数
     addProcessNodesCount(processNodes.length);
 
+    if (!needTranslate) {
+        emit<any>('UPDATE_STAGE_TOTALS', 'translate', 0)
+    }
+    emit<any>('UPDATE_STAGE_TOTALS', 'format', needFormat ? processNodes.length : 0)
+    emit<any>('UPDATE_STAGE_TOTALS', 'polish', 0)
+
     // 处理需要翻译的节点
     if (needTranslate) {
         const availableTransModal = await getAvaliableTransModal(translationModal);
@@ -116,14 +125,28 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
         const untranslatedNodes = processNodes.filter((node) =>
             needTranslating(node.textNode.characters, targetLanguage)
         );
+        emit<any>('UPDATE_STAGE_TOTALS', 'translate', untranslatedNodes.length)
+        emit<any>('UPDATE_STAGE_TOTALS', 'polish', 0)
+        emit<any>('UPDATE_STAGE_TOTALS', 'format', needFormat ? processNodes.length : 0)
 
         // 将节点分组并行翻译
         const translationPromises = Array.from({ length: Math.ceil(untranslatedNodes.length / TRANSLATE_CHUNK_SIZE) }, async (_, i) => {
             const nodesChunk = untranslatedNodes.slice(i * TRANSLATE_CHUNK_SIZE, (i + 1) * TRANSLATE_CHUNK_SIZE);
 
             return translate(nodesChunk, targetLanguage, availableTransModal, termbaseMode).then(() => {
+                translateDone += nodesChunk.length
+                emit<any>('STAGE_STEP_COMPLETE', 'translate', translateDone)
                 return Promise.all(nodesChunk.map(async (node) => {
-                    await polishAndFormatNode(node, needPolish, needFormat, targetLanguage, platform);
+                    await polishAndFormatNode(node, needPolish, needFormat, targetLanguage, platform, () => {
+                        polishDone += 1
+                        emit<any>('STAGE_STEP_COMPLETE', 'polish', polishDone)
+                    }, () => {
+                        formatDone += 1
+                        emit<any>('STAGE_STEP_COMPLETE', 'format', formatDone)
+                    }, () => {
+                        const nextTotal = polishDone + 1
+                        emit<any>('UPDATE_STAGE_TOTALS', 'polish', nextTotal)
+                    });
                 }));
             });
         });
@@ -133,18 +156,34 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
 
     // 处理剩余的节点
     const remainingNodes = needTranslate ? processNodes.filter((node) => !needTranslating(node.textNode.characters, targetLanguage)) : processNodes;
-    await Promise.all(remainingNodes.map(node => polishAndFormatNode(node, false, needFormat, targetLanguage, platform)));
+    if (needFormat) emit<any>('UPDATE_STAGE_TOTALS', 'format', processNodes.length)
+    await Promise.all(remainingNodes.map(node => polishAndFormatNode(node, false, needFormat, targetLanguage, platform, undefined, () => {
+        formatDone += 1
+        emit<any>('STAGE_STEP_COMPLETE', 'format', formatDone)
+    })));
 
     // 记录任务完成时间
     logCompletion(startTime);
 }
 
-async function polishAndFormatNode(node: ProcessNode, needPolish: boolean, needFormat: boolean, targetLanguage: Language, platform: Platform) {
-    if (needPolish && needPolishing(node.updatedContent)) {
+async function polishAndFormatNode(
+    node: ProcessNode,
+    needPolish: boolean,
+    needFormat: boolean,
+    targetLanguage: Language,
+    platform: Platform,
+    onPolishDone?: () => void,
+    onFormatDone?: () => void,
+    onPolishSchedule?: () => void,
+) {
+    if (needPolish && needPolishing(node.updatedContent || node.textNode.characters)) {
+        onPolishSchedule && onPolishSchedule()
         await polish(node, targetLanguage);
+        onPolishDone && onPolishDone()
     }
     if (needFormat) {
         formatter(node, targetLanguage, platform);
+        onFormatDone && onFormatDone()
     }
     updateNodeStyleAndContent(node);
 }
@@ -411,7 +450,7 @@ async function getAvaliableTransModal(translationModal: TranslationModal) {
         emit<ShowToastHandler>(
             'SHOW_TOAST',
             ToastType.Warning,
-            'Google Translation is unavailable. Switch to Baidu Translation.'
+            'Google Translation is unavailable, switching to Baidu Translation'
         );
     }
 

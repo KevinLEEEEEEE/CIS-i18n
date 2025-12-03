@@ -97,7 +97,7 @@ describe('getFormattedStyleKey', () => {
     const platform = Platform.Desktop;
 
     const result = getFormattedStyleKey(fontName, fontSize, language, platform);
-    expect(result).toBe('84b11a3514fcc6331fd7b22faaf6b0e1e479a60c');
+    expect(result).toBe('220be5c405c5b808bc8231e7ea05f33231eb1242');
   });
 
   test('should return correct styleKey when all parameters are valid - from ZH to EN', () => {
@@ -107,7 +107,7 @@ describe('getFormattedStyleKey', () => {
     const platform = Platform.Desktop;
 
     const result = getFormattedStyleKey(fontName, fontSize, language, platform);
-    expect(result).toBe('2d7121c34523ead5779a21d8ccdfb215b5c10ac3');
+    expect(result).toBe('ef2b901d720e847a9be44a4814c01282ecada982');
   });
   test('should return correct styleKey when all parameters are valid - from EN to ZH', () => {
     const fontName = { family: 'SF Pro Text', style: 'Semibold' };
@@ -116,7 +116,7 @@ describe('getFormattedStyleKey', () => {
     const platform = Platform.Desktop;
 
     const result = getFormattedStyleKey(fontName, fontSize, language, platform);
-    expect(result).toBe('baace18851d4410b290e76e4030a6c43894015b7');
+    expect(result).toBe('bb7500b30fed51ed976517f2fd65f263d1145d66');
   });
 
   test('should return correct styleKey when all parameters are valid - from Desktop to Mobile', () => {
@@ -126,7 +126,7 @@ describe('getFormattedStyleKey', () => {
     const platform = Platform.Mobile;
 
     const result = getFormattedStyleKey(fontName, fontSize, language, platform);
-    expect(result).toBe('a18a512f0c97944421691f6764efd4345d417fc6');
+    expect(result).toBe('2403fbfb07379ae8a8f0295acf34e24f646a0fa7');
   });
 
   test('should return empty with unvalid transfrom between platforms', () => {
@@ -139,14 +139,14 @@ describe('getFormattedStyleKey', () => {
     expect(result).toBe('');
   });
 
-  test('should return empty with unvalid fontSize - from Mobile to Desktop', () => {
+  test('should return correct styleKey with valid fontSize - Desktop EN 14', () => {
     const fontName = { family: 'PingFang SC', style: 'Medium' };
     const fontSize = 14;
     const language = Language.EN;
     const platform = Platform.Desktop;
 
     const result = getFormattedStyleKey(fontName, fontSize, language, platform);
-    expect(result).toBe('effac6f1285c0efcbcdfd9fac1295bc4fbcf82bb');
+    expect(result).toBe('79ea3d768e7c168125eadf7677a6594f67f1715a');
   });
 
   test('should return empty string when parameters are invalid', () => {

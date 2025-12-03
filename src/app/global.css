@@ -2,3 +2,51 @@ body {
   margin: 0;
   padding: 0;
 }
+
+.css-iHXJtn {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --text: #0f1216;
+  --muted: #637d8c;
+  --border: #e2e8f0;
+  --primary: #256eff;
+  --button-bg: var(--primary);
+  --button-text: #ffffff;
+  --overlay-bg: rgba(255, 255, 255, 0.80);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1216;
+    --surface: #1c1f24;
+    --text: #e6edf3;
+    --muted: #9aa6b2;
+    --border: #2a2f36;
+    --primary: #4c8dff;
+    --button-bg: var(--primary);
+    --button-text: #0f1216;
+    --overlay-bg: rgba(15, 18, 22, 0.70);
+  }
+}
+
+.figma-dark {
+  --bg: #0f1216;
+  --surface: #1c1f24;
+  --text: #e6edf3;
+  --muted: #9aa6b2;
+  --border: #2a2f36;
+  --primary: #4c8dff;
+  --button-bg: var(--primary);
+  --button-text: #0f1216;
+  --overlay-bg: rgba(15, 18, 22, 0.70);
+}

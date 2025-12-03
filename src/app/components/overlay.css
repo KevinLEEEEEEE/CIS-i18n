@@ -1,0 +1,45 @@
+.processing-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--overlay-bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+  backdrop-filter: blur(6px);
+}
+
+.processing-layer .status {
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.processing-layer .status-main {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: #0F172A;
+  text-align: center;
+}
+
+.processing-layer .status-sub {
+  font-size: 12px;
+  line-height: 18px;
+  color: #64748B;
+  text-align: center;
+  margin-top: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .processing-layer .status-main {
+    color: #FFFFFF;
+  }
+
+  .processing-layer .status-sub {
+    color: #CBD5E1;
+  }
+}
