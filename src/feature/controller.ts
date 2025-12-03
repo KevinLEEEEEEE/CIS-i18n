@@ -18,6 +18,7 @@ import {
     UpdateTotalTasksHandler,
     TaskCompleteHandler,
     SetAccessTokenHandler,
+    ClearCacheHandler,
 } from '../types';
 
 import { getClientStorageValue, setLocalStorage } from '../utils/utility';
@@ -25,6 +26,8 @@ import { translateContentByModal, needTranslating, isGoogleTranslationApiAccessi
 import { polishContent, needPolishing } from './polish';
 import { getFormattedContent, getFormattedStyleKey } from './format';
 import { addTranslateUsageCount, addStylelintUsageCount, addProcessNodesCount } from './usageRecord';
+import { clearTranslationCache } from './cache';
+import { clearPolishCache } from './polisher';
 import { checkAndrefreshAccessToken, setAccessToken } from './oauthManager';
 import { googleApiKey, baiduAppId, baiduApiKey, cozeApiKey } from '../../config';
 
@@ -93,6 +96,12 @@ function handleSetAccessToken(oauthCode: string) {
     setAccessToken(oauthCode);
 }
 
+async function handleClearCache() {
+    await clearTranslationCache();
+    await clearPolishCache();
+    emit<ShowToastHandler>('SHOW_TOAST', ToastType.Positive, 'Local caches cleared');
+}
+
 // 核心处理逻辑
 async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, needPolish: boolean, needFormat: boolean) {
     if (nodes.length === 0) {
@@ -116,6 +125,7 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
     let translateDone = 0
     let polishDone = 0
     let formatDone = 0
+    let polishTotal = 0
 
     console.log(`[Task begin] TargetLang: ${targetLanguage}, DisplayMode: ${displayMode}, Platform: ${platform}, TransModal: ${translationModal}`);
 
@@ -137,7 +147,8 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
         emit<any>('UPDATE_STAGE_TOTALS', 'translate', 0)
     }
     emit<any>('UPDATE_STAGE_TOTALS', 'format', needFormat ? processNodes.length : 0)
-    emit<any>('UPDATE_STAGE_TOTALS', 'polish', 0)
+    polishTotal = needTranslate ? 0 : (needPolish ? processNodes.filter((n) => needPolishing(n.textNode.characters)).length : 0)
+    emit<any>('UPDATE_STAGE_TOTALS', 'polish', polishTotal)
 
     // 处理需要翻译的节点
     if (needTranslate) {
@@ -148,7 +159,6 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
             needTranslating(node.textNode.characters, targetLanguage)
         );
         emit<any>('UPDATE_STAGE_TOTALS', 'translate', untranslatedNodes.length)
-        emit<any>('UPDATE_STAGE_TOTALS', 'polish', 0)
         emit<any>('UPDATE_STAGE_TOTALS', 'format', needFormat ? processNodes.length : 0)
 
         // 将节点分组并行翻译
@@ -158,6 +168,11 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
             return translate(nodesChunk, targetLanguage, availableTransModal, termbaseMode).then(() => {
                 translateDone += nodesChunk.length
                 emit<any>('STAGE_STEP_COMPLETE', 'translate', translateDone)
+                const chunkPolish = needPolish ? nodesChunk.filter((node) => needPolishing(node.updatedContent || node.textNode.characters)).length : 0
+                if (chunkPolish > 0) {
+                    polishTotal += chunkPolish
+                    emit<any>('UPDATE_STAGE_TOTALS', 'polish', polishTotal)
+                }
                 return Promise.all(nodesChunk.map(async (node) => {
                     await polishAndFormatNode(node, needPolish, needFormat, targetLanguage, platform, () => {
                         polishDone += 1
@@ -165,9 +180,6 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
                     }, () => {
                         formatDone += 1
                         emit<any>('STAGE_STEP_COMPLETE', 'format', formatDone)
-                    }, () => {
-                        const nextTotal = polishDone + 1
-                        emit<any>('UPDATE_STAGE_TOTALS', 'polish', nextTotal)
                     });
                 }));
             });
@@ -478,6 +490,7 @@ on<ResizeWindowHandler>('RESIZE_WINDOW', ({ width, height }) => figma.ui.resize(
 on<TranslateHandler>('TRANSLATE', handleTranslate);
 on<StylelintHandler>('STYLELINT', handleStylelint);
 on<SetAccessTokenHandler>('SET_ACCESS_TOKEN', handleSetAccessToken);
+on<ClearCacheHandler>('CLEAR_CACHE', handleClearCache);
 function getTranslateChunkSize(modal: TranslationModal) {
     if (modal === TranslationModal.GoogleAdvanced || modal === TranslationModal.GoogleBasic) {
         return 50;

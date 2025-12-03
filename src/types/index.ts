@@ -40,6 +40,11 @@ export interface ClearTasksHandler extends EventHandler {
     handler: () => void;
 }
 
+export interface ClearCacheHandler extends EventHandler {
+    name: 'CLEAR_CACHE';
+    handler: () => void;
+}
+
 export interface ShowProcessingLayerHandler extends EventHandler {
     name: 'SHOW_PROCESSING_LAYER';
     handler: () => void;
@@ -122,6 +127,8 @@ export enum StorageKey {
     GoogleAccessTokenExpireDate = 'googleAccessTokenExpireDate',
     GoogleRefreshToken = 'googleRefreshToken',
     isFirstOpen = 'isFirstOpen',
+    TranslationCache = 'translationCache',
+    PolishCache = 'polishCache',
 }
 
 export enum Language {

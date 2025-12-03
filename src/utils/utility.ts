@@ -30,6 +30,8 @@ const defaultValues: { [key in StorageKey]: any } = {
     [StorageKey.GoogleAccessTokenExpireDate]: '',
     [StorageKey.GoogleRefreshToken]: '',
     [StorageKey.isFirstOpen]: true,
+    [StorageKey.TranslationCache]: {},
+    [StorageKey.PolishCache]: {},
 };
 
 export async function setLocalStorage(key: StorageKey, value: any) {

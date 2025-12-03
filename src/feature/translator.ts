@@ -93,7 +93,7 @@ export async function translateContentByModal(
 
   // 定义翻译策略
   const BATCH_SIZE = 50
-  const TTL_MS = 24 * 60 * 60 * 1000
+  const TTL_MS = 2 * 24 * 60 * 60 * 1000
   const { uniq, indexes } = dedupe(textArray)
 
   async function fromCacheOrFetchArray(fn: (q: string[]) => Promise<string[]>, provider: string) {

@@ -1,4 +1,5 @@
-import { Language } from '../types'
+import { Language, StorageKey } from '../types'
+import { getClientStorageValue, setLocalStorage } from '../utils/utility'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const __md5 = require('md5')
 const md5 = typeof __md5 === 'function' ? __md5 : __md5.default
@@ -19,6 +20,13 @@ export async function getTranslationFromCache(provider: string, lang: Language, 
         console.info('[Translate] CacheHit: using cached result', { provider, lang, termbase, key: md5(text), expiresAt: new Date(hit.e).toISOString() })
         return hit.v
     }
+    const store = (await getClientStorageValue(StorageKey.TranslationCache)) as Record<string, Entry>
+    const entry = store[key]
+    if (entry && entry.e > Date.now()) {
+        mem.set(key, entry)
+        console.info('[Translate] CacheHit: using persisted result', { provider, lang, termbase, key: md5(text), expiresAt: new Date(entry.e).toISOString() })
+        return entry.v
+    }
     return undefined
 }
 
@@ -30,6 +38,11 @@ export async function setTranslationToCache(provider: string, lang: Language, te
         const first = mem.keys().next().value as string | undefined
         if (first) mem.delete(first)
     }
+    const store = (await getClientStorageValue(StorageKey.TranslationCache)) as Record<string, Entry>
+    store[key] = entry
+    const keys = Object.keys(store)
+    if (keys.length > MAX) delete store[keys[0]]
+    await setLocalStorage(StorageKey.TranslationCache, store)
 }
 
 export function dedupe(texts: string[]) {
@@ -45,4 +58,10 @@ export function dedupe(texts: string[]) {
         indexes[i] = map.get(h) as number
     })
     return { uniq, indexes }
+}
+
+export async function clearTranslationCache() {
+    mem.clear()
+    await setLocalStorage(StorageKey.TranslationCache, {})
+    console.info('[Translate] CacheCleared')
 }

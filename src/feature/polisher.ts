@@ -1,5 +1,5 @@
 import { Language, StorageKey } from '../types';
-import { getClientStorageValue } from '../utils/utility';
+import { getClientStorageValue, setLocalStorage } from '../utils/utility';
 import { polisherLimiter, runWithLimiter } from '../utils/rateLimiter'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const __md5 = require('md5');
@@ -8,7 +8,7 @@ const md5 = typeof __md5 === 'function' ? __md5 : __md5.default;
 const MINIMAL_POLISH_CONTENT_LENGTH = 5;
 const MAX_CALLS_PER_SECOND = 5;
 const CACHE_MAX_ENTRIES = 100;
-const CACHE_TTL_MS = 300000;
+const CACHE_TTL_MS = 2 * 24 * 60 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 5000;
 
 /**
@@ -42,9 +42,12 @@ export function needPolishing(text: string): boolean {
  * @param content - 需要润色的内容
  * @returns API 响应结果
  */
+let __polishCacheRef: Map<string, { v: string; e: number }> | null = null;
+
 function createPolishContentFunction() {
     let lastCallTimestamp = Date.now();
     const cache = new Map<string, { v: string; e: number }>();
+    __polishCacheRef = cache;
 
     return async function polishContent(content: string, targetLanguage: Language) {
         if (!content || !targetLanguage) {
@@ -56,6 +59,14 @@ function createPolishContentFunction() {
         if (cached && cached.e > Date.now()) {
             console.info('[Polish] CacheHit: using cached result', { key, expiresAt: new Date(cached.e).toISOString() });
             return cached.v;
+        }
+
+        const store = (await getClientStorageValue(StorageKey.PolishCache)) as Record<string, { v: string; e: number }>;
+        const persisted = store[key];
+        if (persisted && persisted.e > Date.now()) {
+            cache.set(key, persisted);
+            console.info('[Polish] CacheHit: using persisted result', { key, expiresAt: new Date(persisted.e).toISOString() });
+            return persisted.v;
         }
 
         const currentTimestamp = Date.now();
@@ -77,11 +88,17 @@ function createPolishContentFunction() {
             const release = await polisherLimiter.acquire();
             const res = await runWithLimiter(release, () => fetchFromCozeApi(prompt, content));
             const out = typeof res === 'string' && res ? res : content;
-            cache.set(key, { v: out, e: Date.now() + CACHE_TTL_MS });
+            const entry = { v: out, e: Date.now() + CACHE_TTL_MS };
+            cache.set(key, entry);
             if (cache.size > CACHE_MAX_ENTRIES) {
                 const first = cache.keys().next().value as string | undefined;
                 if (first) cache.delete(first);
             }
+            const store2 = (await getClientStorageValue(StorageKey.PolishCache)) as Record<string, { v: string; e: number }>;
+            store2[key] = entry;
+            const keys = Object.keys(store2);
+            if (keys.length > CACHE_MAX_ENTRIES) delete store2[keys[0]];
+            await setLocalStorage(StorageKey.PolishCache, store2);
             return out;
         } catch (error) {
             console.error('[Polish] Error occurred during API call, returning original content:', error);
@@ -92,6 +109,12 @@ function createPolishContentFunction() {
 
 // 使用闭包创建的函数
 export const polishContent = createPolishContentFunction();
+
+export async function clearPolishCache() {
+    __polishCacheRef?.clear();
+    await setLocalStorage(StorageKey.PolishCache, {});
+    console.info('[Polish] CacheCleared');
+}
 
 /**
  * 调用 Coze API 进行内容润色

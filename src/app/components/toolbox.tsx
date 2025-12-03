@@ -179,6 +179,10 @@ const Toolbox = () => {
         emit<TranslateHandler>('TRANSLATE');
     };
 
+    const handleClearCacheClick = () => {
+        emit<any>('CLEAR_CACHE');
+    };
+
     return (
         <Block paddingLeft="16px" paddingRight="16px" paddingTop="8px" paddingBottom="8px">
             {isLoading && (
@@ -186,19 +190,19 @@ const Toolbox = () => {
                     <Spinner />
                     <div className="status">
                         <LabelMedium className="status-main">
-                            {currentStep > 0 ? `Processing ${currentStep} of ${totalSteps}` : 'Preparing…'}
+                            {currentStep > 0 ? `Processing ${currentStep}/${totalSteps}` : 'Preparing…'}
                         </LabelMedium>
                         <LabelSmall className="status-sub">
-                            {`Translating ${translateDone} of ${translateTotal}`}
+                            {`Translate ${translateDone}/${translateTotal}`}
                         </LabelSmall>
                         {autoPolish && (
                             <LabelSmall className="status-sub">
-                                {`Polishing ${polishDone} of ${polishTotal}`}
+                                {`Polish ${polishDone}/${polishTotal}`}
                             </LabelSmall>
                         )}
                         {autoStylelint && (
                             <LabelSmall className="status-sub">
-                                {`Formatting ${formatDone} of ${formatTotal}`}
+                                {`Format ${formatDone}/${formatTotal}`}
                             </LabelSmall>
                         )}
                     </div>
@@ -264,6 +268,9 @@ const Toolbox = () => {
                         Help
                     </Button>
                 </Link>
+                <Button kind={KIND.tertiary} size={SIZE.compact} onClick={handleClearCacheClick}>
+                    Clear Cache
+                </Button>
             </Block>
         </Block>
     );
