@@ -20,17 +20,38 @@ import {
     SetAccessTokenHandler,
 } from '../types';
 
-import { getClientStorageValue } from '../utils/utility';
-import { translateContentByModal, needTranslating, isGoogleTranslationApiAccessible } from './translator';
-import { polishContent, needPolishing } from './polisher';
-import { getFormattedContent, getFormattedStyleKey } from './formatter';
+import { getClientStorageValue, setLocalStorage } from '../utils/utility';
+import { translateContentByModal, needTranslating, isGoogleTranslationApiAccessible } from './translate';
+import { polishContent, needPolishing } from './polish';
+import { getFormattedContent, getFormattedStyleKey } from './format';
 import { addTranslateUsageCount, addStylelintUsageCount, addProcessNodesCount } from './usageRecord';
 import { checkAndrefreshAccessToken, setAccessToken } from './oauthManager';
+import { googleApiKey, baiduAppId, baiduApiKey, cozeApiKey } from '../../config';
 
-const TRANSLATE_CHUNK_SIZE = 15;
+async function bootstrapSecrets() {
+    try {
+        const googleKey = await getClientStorageValue(StorageKey.GoogleAPIKey)
+        if (!googleKey && typeof googleApiKey === 'string' && googleApiKey) {
+            await setLocalStorage(StorageKey.GoogleAPIKey, googleApiKey)
+        }
+        const baiduId = await getClientStorageValue(StorageKey.BaiduAppID)
+        if (!baiduId && typeof baiduAppId === 'string' && baiduAppId) {
+            await setLocalStorage(StorageKey.BaiduAppID, baiduAppId)
+        }
+        const baiduK = await getClientStorageValue(StorageKey.BaiduKey)
+        if (!baiduK && typeof baiduApiKey === 'string' && baiduApiKey) {
+            await setLocalStorage(StorageKey.BaiduKey, baiduApiKey)
+        }
+        const cozeK = await getClientStorageValue(StorageKey.CozeAPIKey)
+        if (!cozeK && typeof cozeApiKey === 'string' && cozeApiKey) {
+            await setLocalStorage(StorageKey.CozeAPIKey, cozeApiKey)
+        }
+    } catch { }
+}
 
 // 初始化插件
 async function init() {
+    await bootstrapSecrets();
     figma.showUI(__html__, { width: 380, height: 308 });
     figma.skipInvisibleInstanceChildren = true
     checkAndrefreshAccessToken();
@@ -121,6 +142,7 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
     // 处理需要翻译的节点
     if (needTranslate) {
         const availableTransModal = await getAvaliableTransModal(translationModal);
+        const chunkSize = getTranslateChunkSize(availableTransModal);
         const termbaseMode = (await getClientStorageValue(StorageKey.Termbase)) === SwitchMode.On;
         const untranslatedNodes = processNodes.filter((node) =>
             needTranslating(node.textNode.characters, targetLanguage)
@@ -130,8 +152,8 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
         emit<any>('UPDATE_STAGE_TOTALS', 'format', needFormat ? processNodes.length : 0)
 
         // 将节点分组并行翻译
-        const translationPromises = Array.from({ length: Math.ceil(untranslatedNodes.length / TRANSLATE_CHUNK_SIZE) }, async (_, i) => {
-            const nodesChunk = untranslatedNodes.slice(i * TRANSLATE_CHUNK_SIZE, (i + 1) * TRANSLATE_CHUNK_SIZE);
+        const translationPromises = Array.from({ length: Math.ceil(untranslatedNodes.length / chunkSize) }, async (_, i) => {
+            const nodesChunk = untranslatedNodes.slice(i * chunkSize, (i + 1) * chunkSize);
 
             return translate(nodesChunk, targetLanguage, availableTransModal, termbaseMode).then(() => {
                 translateDone += nodesChunk.length
@@ -369,67 +391,59 @@ async function updateNodeStyle(node: TextNode, styleKey: string) {
 }
 
 const loadFontAsync = (() => {
-    const cachedFonts: FontName[] = [];
-    const loadingFonts: { [key: string]: Promise<void> } = {}; // 存储正在加载的字体
+    const cachedFontsKeySet = new Set<string>();
+    const loadingFonts = new Map<string, Promise<void>>();
 
     return async (fontName: FontName) => {
-        // 检查字体是否已缓存
-        if (cachedFonts.some((cachedFont) => cachedFont.family === fontName.family && cachedFont.style === fontName.style)) {
-            return; // 字体已缓存，无需加载
+        const key = `${fontName.family}|${fontName.style}`;
+        if (cachedFontsKeySet.has(key)) {
+            return;
         }
-
-        // 如果字体正在加载中，直接返回该 Promise
-        if (loadingFonts[fontName.family + fontName.style]) {
-            return loadingFonts[fontName.family + fontName.style];
+        const existing = loadingFonts.get(key);
+        if (existing) {
+            return existing;
         }
-
-        // 开始加载字体
         const loadingPromise = figma
             .loadFontAsync(fontName)
             .then(() => {
-                cachedFonts.push(fontName); // 加载完成后缓存字体
+                cachedFontsKeySet.add(key);
             })
             .finally(() => {
-                delete loadingFonts[fontName.family + fontName.style]; // 加载完成后移除
+                loadingFonts.delete(key);
             });
-
-        loadingFonts[fontName.family + fontName.style] = loadingPromise; // 缓存正在加载的 Promise
-        return loadingPromise; // 返回 Promise
+        loadingFonts.set(key, loadingPromise);
+        return loadingPromise;
     };
 })();
 
 const loadStyleAsync = (() => {
-    const cachedStyles: { key: string; style: TextStyle }[] = []; // 明确类型
-    const loadingStyles: { [key: string]: Promise<TextStyle> } = {}; // 存储正在加载的样式
+    const cachedStyles = new Map<string, TextStyle>();
+    const loadingStyles = new Map<string, Promise<TextStyle>>();
 
     return async (styleKey: string) => {
-        const cachedStyle = cachedStyles.find((cachedStyle) => cachedStyle.key === styleKey);
-
-        if (cachedStyle) {
-            return cachedStyle.style;
+        const hit = cachedStyles.get(styleKey);
+        if (hit) {
+            return hit;
         }
-
-        // 如果样式正在加载中，直接返回该 Promise
-        if (loadingStyles[styleKey]) {
-            return loadingStyles[styleKey];
+        const existing = loadingStyles.get(styleKey);
+        if (existing) {
+            return existing;
         }
-
-        // 开始加载样式
         const loadingPromise = figma
             .importStyleByKeyAsync(styleKey)
             .then((style) => {
                 if (style && style.type === 'TEXT') {
                     const textStyle = style as TextStyle;
-                    cachedStyles.push({ key: styleKey, style: textStyle });
+                    cachedStyles.set(styleKey, textStyle);
                     return textStyle;
                 }
+                return undefined as unknown as TextStyle;
             })
             .finally(() => {
-                delete loadingStyles[styleKey]; // 加载完成后移除
+                loadingStyles.delete(styleKey);
             });
-
-        loadingStyles[styleKey] = loadingPromise; // 缓存正在加载的 Promise
-        return loadingPromise; // 返回 Promise
+        loadingStyles.set(styleKey, loadingPromise);
+        return loadingPromise;
     };
 })();
 
@@ -464,3 +478,12 @@ on<ResizeWindowHandler>('RESIZE_WINDOW', ({ width, height }) => figma.ui.resize(
 on<TranslateHandler>('TRANSLATE', handleTranslate);
 on<StylelintHandler>('STYLELINT', handleStylelint);
 on<SetAccessTokenHandler>('SET_ACCESS_TOKEN', handleSetAccessToken);
+function getTranslateChunkSize(modal: TranslationModal) {
+    if (modal === TranslationModal.GoogleAdvanced || modal === TranslationModal.GoogleBasic) {
+        return 50;
+    }
+    if (modal === TranslationModal.Baidu) {
+        return 20;
+    }
+    return 10;
+}

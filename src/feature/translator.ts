@@ -50,7 +50,13 @@ export function needTranslating(content: string, targetLanguage: Language): bool
  * 判断 Google 翻译 API 是否可访问
  * @returns 是否可访问的布尔值
  */
+let __googleAccessCache = { t: 0, v: false } as { t: number; v: boolean };
+const __GOOGLE_ACCESS_TTL = 5 * 60 * 1000;
 export async function isGoogleTranslationApiAccessible(): Promise<boolean> {
+  const now = Date.now();
+  if (now - __googleAccessCache.t < __GOOGLE_ACCESS_TTL) {
+    return __googleAccessCache.v;
+  }
   try {
     const response = await Promise.race([
       fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=en&tl=zh&q=test`, {
@@ -58,10 +64,11 @@ export async function isGoogleTranslationApiAccessible(): Promise<boolean> {
       }),
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 5000))
     ]);
-
+    __googleAccessCache = { t: now, v: response.ok };
     return response.ok;
   } catch (error) {
     console.error('[Translator] Error accessing Google Translation API:', error);
+    __googleAccessCache = { t: now, v: false };
     return false;
   }
 }
@@ -298,7 +305,7 @@ async function translateByGoogleFree(query: string, targetLanguage: Language, so
     return data[0].map((item: any) => item[0]).join('');
   } catch (error) {
     handleError(error, 'Failed to translate by Google Free');
-    return [];
+    return '';
   }
 }
 

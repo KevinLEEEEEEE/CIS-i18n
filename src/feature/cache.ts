@@ -1,5 +1,7 @@
 import { Language } from '../types'
-import md5 from 'md5'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const __md5 = require('md5')
+const md5 = typeof __md5 === 'function' ? __md5 : __md5.default
 
 type Entry = { v: string; e: number }
 

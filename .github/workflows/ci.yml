@@ -10,5 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
+      - name: Prepare config
+        run: cp config.example.js config.js
       - run: yarn
       - run: yarn build

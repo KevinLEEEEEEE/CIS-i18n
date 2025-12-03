@@ -184,14 +184,27 @@ const Setting = () => {
         toaster.info('Settings saved');
     }, [selectedTransModal, termbase, autoStylelint, autoPolishing, googleAPIKey, baiduAppID, baiduKey, cozeAPIKey]);
 
-    const getMaskedValue = (value: string) => {
-        if (value.length <= 10) {
-            return '*'.repeat(value.length);
-        }
-        const visiblePart = value.slice(0, -10);
-        const maskedPart = '*'.repeat(10);
-        return visiblePart + maskedPart;
+    const [editingGoogleKey, setEditingGoogleKey] = useState(false);
+    const [editingBaiduAppID, setEditingBaiduAppID] = useState(false);
+    const [editingBaiduKey, setEditingBaiduKey] = useState(false);
+    const [editingCozeKey, setEditingCozeKey] = useState(false);
+
+    const googleMaskTimer = useRef<any>(null);
+    const baiduAppIdMaskTimer = useRef<any>(null);
+    const baiduKeyMaskTimer = useRef<any>(null);
+    const cozeMaskTimer = useRef<any>(null);
+    const googlePrevRef = useRef<string>('');
+    const baiduAppIdPrevRef = useRef<string>('');
+    const baiduKeyPrevRef = useRef<string>('');
+    const cozePrevRef = useRef<string>('');
+
+    const maskLast8 = (value: string) => {
+        if (!value) return '';
+        const len = value.length;
+        if (len <= 8) return '********';
+        return value.slice(0, len - 8) + '********';
     };
+
 
     return (
         <Block>
@@ -257,9 +270,24 @@ const Setting = () => {
                     <Block className="tab-content" style={{ height: 320 }}>
                         <FormControl label="Google">
                             <Input
-                                value={getMaskedValue(googleAPIKey)}
-                                onChange={(e) => setGoogleAPIKey(e.target.value)}
-                                placeholder="Enter API key"
+                                value={editingGoogleKey ? googleAPIKey : maskLast8(googleAPIKey)}
+                                placeholder={'Enter Google API key'}
+                                onFocus={() => {
+                                    googlePrevRef.current = googleAPIKey;
+                                    setEditingGoogleKey(true);
+                                    setGoogleAPIKey('');
+                                }}
+                                onBlur={() => {
+                                    setEditingGoogleKey(false);
+                                    if (!googleAPIKey) {
+                                        setGoogleAPIKey(googlePrevRef.current);
+                                    }
+                                }}
+                                onChange={(e: any) => {
+                                    setGoogleAPIKey(e.target.value);
+                                    if (googleMaskTimer.current) clearTimeout(googleMaskTimer.current);
+                                    googleMaskTimer.current = setTimeout(() => setEditingGoogleKey(false), 2000);
+                                }}
                                 clearOnEscape
                             />
                         </FormControl>
@@ -267,15 +295,45 @@ const Setting = () => {
                         <FormControl label="Baidu">
                             <Block style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                 <Input
-                                    value={getMaskedValue(baiduAppID)}
-                                    onChange={(e) => setBaiduAppID(e.target.value)}
-                                    placeholder="Enter App ID"
+                                    value={editingBaiduAppID ? baiduAppID : maskLast8(baiduAppID)}
+                                    placeholder={'Enter Baidu App ID'}
+                                    onFocus={() => {
+                                        baiduAppIdPrevRef.current = baiduAppID;
+                                        setEditingBaiduAppID(true);
+                                        setBaiduAppID('');
+                                    }}
+                                    onBlur={() => {
+                                        setEditingBaiduAppID(false);
+                                        if (!baiduAppID) {
+                                            setBaiduAppID(baiduAppIdPrevRef.current);
+                                        }
+                                    }}
+                                    onChange={(e: any) => {
+                                        setBaiduAppID(e.target.value);
+                                        if (baiduAppIdMaskTimer.current) clearTimeout(baiduAppIdMaskTimer.current);
+                                        baiduAppIdMaskTimer.current = setTimeout(() => setEditingBaiduAppID(false), 2000);
+                                    }}
                                     clearOnEscape
                                 />
                                 <Input
-                                    value={getMaskedValue(baiduKey)}
-                                    onChange={(e) => setBaiduKey(e.target.value)}
-                                    placeholder="Enter API key"
+                                    value={editingBaiduKey ? baiduKey : maskLast8(baiduKey)}
+                                    placeholder={'Enter Baidu API key'}
+                                    onFocus={() => {
+                                        baiduKeyPrevRef.current = baiduKey;
+                                        setEditingBaiduKey(true);
+                                        setBaiduKey('');
+                                    }}
+                                    onBlur={() => {
+                                        setEditingBaiduKey(false);
+                                        if (!baiduKey) {
+                                            setBaiduKey(baiduKeyPrevRef.current);
+                                        }
+                                    }}
+                                    onChange={(e: any) => {
+                                        setBaiduKey(e.target.value);
+                                        if (baiduKeyMaskTimer.current) clearTimeout(baiduKeyMaskTimer.current);
+                                        baiduKeyMaskTimer.current = setTimeout(() => setEditingBaiduKey(false), 2000);
+                                    }}
                                     clearOnEscape
                                 />
                             </Block>
@@ -283,9 +341,24 @@ const Setting = () => {
 
                         <FormControl label="Coze">
                             <Input
-                                value={getMaskedValue(cozeAPIKey)}
-                                onChange={(e) => setCozeAPIKey(e.target.value)}
-                                placeholder="Enter API key"
+                                value={editingCozeKey ? cozeAPIKey : maskLast8(cozeAPIKey)}
+                                placeholder={'Enter Coze API key'}
+                                onFocus={() => {
+                                    cozePrevRef.current = cozeAPIKey;
+                                    setEditingCozeKey(true);
+                                    setCozeAPIKey('');
+                                }}
+                                onBlur={() => {
+                                    setEditingCozeKey(false);
+                                    if (!cozeAPIKey) {
+                                        setCozeAPIKey(cozePrevRef.current);
+                                    }
+                                }}
+                                onChange={(e: any) => {
+                                    setCozeAPIKey(e.target.value);
+                                    if (cozeMaskTimer.current) clearTimeout(cozeMaskTimer.current);
+                                    cozeMaskTimer.current = setTimeout(() => setEditingCozeKey(false), 2000);
+                                }}
                                 clearOnEscape
                             />
                         </FormControl>
@@ -295,7 +368,7 @@ const Setting = () => {
                 <Tab title="Google OAuth">
                     <Block className="tab-content" style={{ height: 328 }}>
                         <ParagraphMedium marginTop="0px" marginBottom="12px">
-                            Step 1: Click "Authorize with Google" to sign in
+                            Step 1: Click 'Authorize with Google' to finalize sign-in
                         </ParagraphMedium>
 
                         <Button
