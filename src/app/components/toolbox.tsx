@@ -179,9 +179,7 @@ const Toolbox = () => {
         emit<TranslateHandler>('TRANSLATE');
     };
 
-    const handleClearCacheClick = () => {
-        emit<any>('CLEAR_CACHE');
-    };
+
 
     return (
         <Block paddingLeft="16px" paddingRight="16px" paddingTop="8px" paddingBottom="8px">

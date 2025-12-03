@@ -10,6 +10,15 @@ import { Language, Platform } from '../types';
  */
 
 const skipFormatDictionary = new Set(['*']);
+const __MONTH_ABBR: { [key: string]: string } = {
+    January: 'Jan', February: 'Feb', March: 'Mar', April: 'Apr', May: 'May', June: 'Jun', July: 'Jul', August: 'Aug', September: 'Sep', October: 'Oct', November: 'Nov', December: 'Dec'
+};
+const __DAY_ABBR: { [key: string]: string } = {
+    Sunday: 'Sun', Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat'
+};
+const __MONTH_NUM_ABBR: { [key: string]: string } = {
+    '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec'
+};
 
 /**
  * 根据目标语言和节点名称格式化内容
@@ -142,6 +151,7 @@ function isMatchingStyle(
  * @returns 格式化后的内容
  */
 function formatEnglishContent(content: string, nodeName: string, parentNodeName: string): string {
+    content = formatDateTime(content);
     content = formatDate(content);
     content = abbreviateDay(content);
     content = abbreviateDate(content);
@@ -254,6 +264,29 @@ function formatDate(content: string): string {
         }
         return formattedDate1;
     });
+}
+
+function formatDateTime(content: string): string {
+    const MONTH_PATTERN = '(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
+    const WEEKDAY_PATTERN = '(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sun|Mon|Tue|Wed|Thu|Fri|Sat)';
+    const TIME_PATTERN = '(\\d{1,2}:\\d{2})';
+    const reText = new RegExp(`(?:${WEEKDAY_PATTERN}[,\\s]+)?${MONTH_PATTERN}[\\s]+(\\d{1,2})(?:[,\\s]+(\\d{4}))?(?:[,\\s]+${TIME_PATTERN})`, 'g');
+    const reNum = /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})(?:[,\s]+(\d{1,2}:\d{2}))\b/g;
+
+    const out1 = content.replace(reText, (_m, w, month, day, year, time) => {
+        const m = month.length > 3 ? __MONTH_ABBR[month] : month;
+        const d = parseInt(day, 10);
+        const wk = w ? (w.length > 3 ? __DAY_ABBR[w] : w) : '';
+        const datePart = `${m} ${d}${year ? `, ${year}` : ''}`;
+        return wk ? `${wk}, ${datePart}, ${time}` : `${datePart}, ${time}`;
+    });
+    const out2 = out1.replace(reNum, (_m, year, month, day, time) => {
+        const mm = month.length === 1 ? `0${month}` : month;
+        const m = __MONTH_NUM_ABBR[mm];
+        const d = parseInt(day, 10);
+        return `${m} ${d}, ${year}, ${time}`;
+    });
+    return out2;
 }
 
 /**

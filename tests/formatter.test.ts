@@ -57,6 +57,12 @@ describe('getFormattedContent', () => {
     expect(result).toBe('The event is on Feb 2, 2022.');
   });
 
+  test('should format numeric date with time', () => {
+    const content = '2022/12/23 12:34';
+    const result = getFormattedContent(content, Language.EN, 'nodeName', '');
+    expect(result).toBe('Dec 23, 2022, 12:34');
+  });
+
   // 日期格式化
   test('should handle non-English content wtesthout formatting', () => {
     const content = '2022年1月1日';
