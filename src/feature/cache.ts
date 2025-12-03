@@ -9,12 +9,21 @@ type Entry = { v: string; e: number }
 const mem = new Map<string, Entry>()
 const MAX = 500
 
-function k(provider: string, lang: Language, termbase: boolean, text: string) {
+/**
+ * 构建翻译缓存的键
+ * 结构：`provider:lang:termbaseFlag:md5(text)`
+ * - provider: 翻译提供方标识（如 GoogleBasic/Baidu）
+ * - lang: 目标语言枚举值
+ * - termbaseFlag: 术语库启用标识（1 表示启用，0 表示未启用）
+ * - md5(text): 文本内容的 MD5 摘要，避免存原文造成过大键
+ */
+
+function buildCacheKey(provider: string, lang: Language, termbase: boolean, text: string) {
     return `${provider}:${lang}:${termbase ? 1 : 0}:${md5(text)}`
 }
 
 export async function getTranslationFromCache(provider: string, lang: Language, termbase: boolean, text: string) {
-    const key = k(provider, lang, termbase, text)
+    const key = buildCacheKey(provider, lang, termbase, text)
     const hit = mem.get(key)
     if (hit && hit.e > Date.now()) {
         console.info('[Translate] CacheHit: using cached result', { provider, lang, termbase, key: md5(text), expiresAt: new Date(hit.e).toISOString() })
@@ -31,7 +40,7 @@ export async function getTranslationFromCache(provider: string, lang: Language, 
 }
 
 export async function setTranslationToCache(provider: string, lang: Language, termbase: boolean, text: string, value: string, ttlMs: number) {
-    const key = k(provider, lang, termbase, text)
+    const key = buildCacheKey(provider, lang, termbase, text)
     const entry = { v: value, e: Date.now() + ttlMs }
     mem.set(key, entry)
     if (mem.size > MAX) {

@@ -8,6 +8,10 @@ const tokenEndpoint = 'https://oauth2.googleapis.com/token';
 
 export async function setAccessToken(oauthCode: string) {
     if (oauthCode) {
+        if (!googleOauthClientID || !googleOauthClientSecret) {
+            emit<ShowToastHandler>('SHOW_TOAST', ToastType.Negative, 'Google OAuth not configured');
+            return;
+        }
         const requestBody = formRequestBody({
             code: oauthCode,
             client_id: googleOauthClientID,
@@ -32,7 +36,6 @@ export async function setAccessToken(oauthCode: string) {
             setLocalStorage(StorageKey.GoogleAccessTokenExpireDate, expireDate.toISOString());
             setLocalStorage(StorageKey.GoogleRefreshToken, tokenResponse.refresh_token);
 
-
             emit<ShowToastHandler>('SHOW_TOAST', ToastType.Positive, 'Google Advanced Translation activated successfully');
             emit<GoogleAccessTokenSuccessHandler>('GOOGLE_ACCESS_TOKEN_SUCCESS');
         } else {
@@ -45,6 +48,9 @@ export async function setAccessToken(oauthCode: string) {
 }
 
 export async function checkAndrefreshAccessToken() {
+    if (!googleOauthClientID || !googleOauthClientSecret) {
+        return;
+    }
     const expireDateStr = await getClientStorageValue(StorageKey.GoogleAccessTokenExpireDate);
     const secondsUntilExpiration = await accessTokenExpiredIn(expireDateStr);
 
@@ -72,6 +78,9 @@ async function setRefreshTimer(expiresInSeconds: number) {
 }
 
 async function refreshAccessToken() {
+    if (!googleOauthClientID || !googleOauthClientSecret) {
+        return null;
+    }
     const refreshToken = await getClientStorageValue(StorageKey.GoogleRefreshToken);
 
     if (refreshToken) {

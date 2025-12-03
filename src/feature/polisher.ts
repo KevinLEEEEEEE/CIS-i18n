@@ -5,10 +5,27 @@ import { polisherLimiter, runWithLimiter } from '../utils/rateLimiter'
 const __md5 = require('md5');
 const md5 = typeof __md5 === 'function' ? __md5 : __md5.default;
 
+/**
+ * 润色判定的最小文本规模（英文词 + 中文字符）
+ * 说明：低于阈值不触发润色，避免短词误改
+ */
 const MINIMAL_POLISH_CONTENT_LENGTH = 5;
+/**
+ * 每秒最大调用次数（本地节流）
+ * 说明：配合限速器，平滑请求压力
+ */
 const MAX_CALLS_PER_SECOND = 5;
+/**
+ * 本地润色缓存的最大条目数
+ */
 const CACHE_MAX_ENTRIES = 100;
+/**
+ * 润色结果缓存 TTL（毫秒），两天
+ */
 const CACHE_TTL_MS = 2 * 24 * 60 * 60 * 1000;
+/**
+ * 外部 API 请求超时时间（毫秒）
+ */
 const REQUEST_TIMEOUT_MS = 5000;
 
 /**
@@ -135,6 +152,7 @@ async function fetchFromCozeApi(prompt: string, content: string): Promise<any> {
         return completed ? await fetchChatResult(conversationID, chatID) : content;
     }
 
+    // 轮询 Coze 会话状态：非流式，按固定间隔检查是否完成
     return new Promise((resolve) => {
         const interval = setInterval(async () => {
             const isCompleted = await isChatComplete(conversationID, chatID);

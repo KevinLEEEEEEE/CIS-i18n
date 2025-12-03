@@ -6,8 +6,16 @@ import { googleTranslateProjectID, googleTranslateLocations, googleTranslateGlos
 import { translatorLimiter, runWithLimiter } from '../utils/rateLimiter'
 import { getTranslationFromCache, setTranslationToCache, dedupe } from './cache'
 
-const CALL_LIMIT_PER_SECOND = 10; // 每秒请求的翻译次数上限
-const CALL_INTERVAL_PER_SECOND = 1000 / CALL_LIMIT_PER_SECOND; // 每次调用的间隔时间（毫秒）
+/**
+ * 每秒允许的翻译请求上限
+ * 说明：用于在客户端侧平滑请求速率，配合后续限速器共同生效
+ */
+const CALL_LIMIT_PER_SECOND = 10;
+/**
+ * 两次请求之间的最小间隔（毫秒）
+ * 说明：按上限计算得到的节流间隔，避免瞬时并发造成外部 API 拒绝
+ */
+const CALL_INTERVAL_PER_SECOND = 1000 / CALL_LIMIT_PER_SECOND;
 
 /**
  * 统一的错误处理函数
@@ -29,6 +37,8 @@ export function needTranslating(content: string, targetLanguage: Language): bool
   const skipTranslateDictionary: Set<string> = new Set([
     'CNY', 'USD', 'AED', 'EUR', 'GBP', 'JPY', 'CHF', 'HKD', 'SGD', 'RUB', 'INR', 'Hi Travel'
   ]);
+
+  // 跳过词典：用于避免货币/品牌等固定词误翻
 
   // 检查内容是否包含无需翻译的单词
   if (skipTranslateDictionary.has(content)) {
@@ -92,7 +102,15 @@ export async function translateContentByModal(
   }
 
   // 定义翻译策略
+  /**
+   * 批处理大小
+   * 说明：控制单次请求的文本数量，平衡外部 API 限制与内存占用
+   */
   const BATCH_SIZE = 50
+  /**
+   * 翻译结果缓存 TTL（毫秒）
+   * 说明：两天有效期，降低重复调用成本
+   */
   const TTL_MS = 2 * 24 * 60 * 60 * 1000
   const { uniq, indexes } = dedupe(textArray)
 
@@ -172,6 +190,7 @@ async function translator(
   targetLanguage: Language,
   termbaseMode: boolean
 ) {
+  // 简单节流：结合限速器，确保单位时间内请求数受控
   let lastRequestTime = 0;
   const sourceLanguage = targetLanguage === Language.EN ? Language.ZH : Language.EN;
 

@@ -69,6 +69,10 @@
   text-align: right;
 }
 
+.tab-content [role="radiogroup"] {
+  gap: 8px;
+}
+
 .footer-actions {
   margin-top: auto;
   display: flex;

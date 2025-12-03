@@ -17,7 +17,7 @@ const Help = () => {
         <div className="help-container">
             <div className="title-container">
                 <DisplayMedium marginBottom="scale500" className="main-title">
-                    Smart I18n
+                    Smart i18n
                 </DisplayMedium>
                 <HeadingXSmall className="sub-title">Figma Translator for CIS</HeadingXSmall>
             </div>

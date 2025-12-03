@@ -268,9 +268,6 @@ const Toolbox = () => {
                         Help
                     </Button>
                 </Link>
-                <Button kind={KIND.tertiary} size={SIZE.compact} onClick={handleClearCacheClick}>
-                    Clear Cache
-                </Button>
             </Block>
         </Block>
     );

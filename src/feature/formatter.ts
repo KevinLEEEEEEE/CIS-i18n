@@ -1,5 +1,14 @@
 import { Language, Platform } from '../types';
 
+/**
+ * 模块说明：
+ * typographyDictionary 定义了不同语言与平台的文本样式映射。
+ * 维护指引：
+ * - 来源：由设计规范导出并人工维护；key 命名应清晰、可读（推荐中文或英文统一风格）。
+ * - 更新：设计规范更新后需同步此字典；styleKey 来自 Figma，共享样式键保持稳定。
+ * - 使用：getFormattedStyleKey/getFormattedFontName 依据 FontName/FontSize/Language/Platform 精确匹配。
+ */
+
 const skipFormatDictionary = new Set(['*']);
 
 /**

@@ -152,7 +152,7 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
 
     // 处理需要翻译的节点
     if (needTranslate) {
-        const availableTransModal = await getAvaliableTransModal(translationModal);
+        const availableTransModal = await getAvailableTransModal(translationModal);
         const chunkSize = getTranslateChunkSize(availableTransModal);
         const termbaseMode = (await getClientStorageValue(StorageKey.Termbase)) === SwitchMode.On;
         const untranslatedNodes = processNodes.filter((node) =>
@@ -323,8 +323,8 @@ async function polish(processNode: ProcessNode, targetLanguage: Language) {
 
 function formatter(processNode: ProcessNode, targetLanguage: Language, platform: Platform) {
     const content = processNode.updatedContent || processNode.textNode.characters;
-    const fontname = getFisrtFontName(processNode.textNode);
-    const fontsize = getFisrtFontSize(processNode.textNode);
+    const fontname = getFirstFontName(processNode.textNode);
+    const fontsize = getFirstFontSize(processNode.textNode);
     const formattedStyleKey = getFormattedStyleKey(fontname, fontsize, targetLanguage, platform);
     const formattedContent = getFormattedContent(
         content,
@@ -459,15 +459,15 @@ const loadStyleAsync = (() => {
     };
 })();
 
-function getFisrtFontName(node: TextNode) {
+function getFirstFontName(node: TextNode) {
     return node.getRangeAllFontNames(0, 1)[0];
 }
 
-function getFisrtFontSize(node: TextNode) {
+function getFirstFontSize(node: TextNode) {
     return node.getRangeFontSize(0, 1) as number;
 }
 
-async function getAvaliableTransModal(translationModal: TranslationModal) {
+async function getAvailableTransModal(translationModal: TranslationModal) {
     if (translationModal.includes('Google') && await isGoogleTranslationApiAccessible()) {
         return translationModal;
     }
