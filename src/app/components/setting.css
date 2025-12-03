@@ -3,3 +3,77 @@
   padding-right: 16px;
   color: var(--text);
 }
+
+[role="tablist"] {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+[role="tablist"]::-webkit-scrollbar {
+  display: none;
+}
+
+[role="tab"] {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tabs-flex {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 24px;
+}
+
+.tab-scroll {
+  /* no internal vertical scroll */
+}
+
+.stat-list {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: var(--surface);
+}
+
+.stat-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  line-height: 24px;
+}
+
+.stat-divider {
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+.stat-label {
+  color: var(--muted);
+}
+
+.stat-value {
+  color: var(--text);
+  text-align: right;
+}
+
+.footer-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 8px;
+}

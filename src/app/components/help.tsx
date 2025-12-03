@@ -9,7 +9,6 @@ import { DisplayMedium } from 'baseui/typography';
 import { HeadingXSmall } from 'baseui/typography';
 
 const Help = () => {
-    // 初始化时调整窗口大小
     React.useEffect(() => {
         emit<ResizeWindowHandler>('RESIZE_WINDOW', { width: 360, height: 513 });
     }, []);
