@@ -38,14 +38,18 @@ async function incrementCounter(counterName: string, value: number = 1): Promise
  * 增加翻译使用计数
  */
 const addTranslateUsageCount = () => {
-    incrementCounter('translateUsageCount', 1);
+    incrementCounter('translateUsageCount', 1).catch((error) => {
+        console.error('[UsageRecord] Swallow counter error: translateUsageCount', error)
+    });
 }
 
 /**
  * 增加样式检查使用计数
  */
 const addStylelintUsageCount = () => {
-    incrementCounter('stylelintUsageCount', 1);
+    incrementCounter('stylelintUsageCount', 1).catch((error) => {
+        console.error('[UsageRecord] Swallow counter error: stylelintUsageCount', error)
+    });
 }
 
 /**
@@ -53,7 +57,9 @@ const addStylelintUsageCount = () => {
  * @param amount 增加的节点数量
  */
 const addProcessNodesCount = (amount: number) => {
-    incrementCounter('processNodesCount', amount);
+    incrementCounter('processNodesCount', amount).catch((error) => {
+        console.error('[UsageRecord] Swallow counter error: processNodesCount', error)
+    });
 }
 
 export {
