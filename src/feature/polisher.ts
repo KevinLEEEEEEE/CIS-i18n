@@ -4,6 +4,7 @@ import { polisherLimiter, runWithLimiter } from '../utils/rateLimiter'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const __md5 = require('md5');
 const md5 = typeof __md5 === 'function' ? __md5 : __md5.default;
+const ENABLE_COZE_STREAM = true;
 
 /**
  * 润色判定的最小文本规模（英文词 + 中文字符）
@@ -103,7 +104,24 @@ function createPolishContentFunction() {
         const prompt = targetLanguage === Language.ZH ? '润色以下文本: ' : 'Polish following content: ';
         try {
             const release = await polisherLimiter.acquire();
-            const res = await runWithLimiter(release, () => fetchFromCozeApi(prompt, content));
+            const res = await runWithLimiter(release, async () => {
+                if (ENABLE_COZE_STREAM) {
+                    console.info('[Polish] Stream: try streaming');
+                    try {
+                        const s = await fetchFromCozeApiStream(prompt, content);
+                        if (typeof s === 'string' && s) {
+                            console.info('[Polish] Stream: success');
+                            return s;
+                        }
+                        console.warn('[Polish] Stream: empty result, fallback to non-stream');
+                        return await fetchFromCozeApi(prompt, content);
+                    } catch (e) {
+                        console.warn('[Polish] Stream: failed, fallback to non-stream');
+                        return await fetchFromCozeApi(prompt, content);
+                    }
+                }
+                return await fetchFromCozeApi(prompt, content);
+            });
             const out = typeof res === 'string' && res ? res : content;
             const entry = { v: out, e: Date.now() + CACHE_TTL_MS };
             cache.set(key, entry);
@@ -175,6 +193,78 @@ async function fetchFromCozeApi(prompt: string, content: string): Promise<any> {
         console.error('[Polish] Error occurred, returning original content');
         return content;
     });
+}
+
+async function fetchFromCozeApiStream(prompt: string, content: string): Promise<any> {
+    try {
+        const apiKey = await getClientStorageValue(StorageKey.CozeAPIKey);
+        const apiUrl = 'https://api.coze.com/v3/chat';
+        const response = await fetchWithTimeout(apiUrl, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                bot_id: '7418029586187075592',
+                user_id: '001',
+                stream: true,
+                auto_save_history: true,
+                additional_messages: [
+                    { role: 'user', content: prompt + content, content_type: 'text' },
+                ],
+            }),
+        }, REQUEST_TIMEOUT_MS);
+
+        if (!response || !response.ok) {
+            throw new Error('Failed to fetch from Coze API');
+        }
+
+        const body: any = response.body;
+        if (!body || typeof body.getReader !== 'function') {
+            return null;
+        }
+
+        const reader = body.getReader();
+        const decoder = new TextDecoder();
+        let last = '';
+        let done = false;
+
+        const deadline = Date.now() + 20000;
+        while (!done) {
+            if (Date.now() > deadline) break;
+            const { value, done: d } = await reader.read();
+            if (d) {
+                done = true;
+                break;
+            }
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+            for (const line of lines) {
+                let payload = line;
+                if (payload.startsWith('data:')) payload = payload.slice(5).trim();
+                try {
+                    const obj = JSON.parse(payload);
+                    if (typeof obj?.content === 'string' && obj.content.trim()) {
+                        last = obj.content;
+                    } else if (typeof obj?.data === 'string') {
+                        try {
+                            const inner = JSON.parse(obj.data);
+                            const cand = typeof inner?.content === 'string' ? inner.content : (typeof inner?.answer === 'string' ? inner.answer : '');
+                            if (cand && cand.trim()) last = cand;
+                        } catch { }
+                    } else if (obj?.msg_type === 'generate_answer_finish') {
+                        done = true;
+                        break;
+                    }
+                } catch { }
+            }
+        }
+        return last || null;
+    } catch (error) {
+        console.error('[Polish] Stream error:', error);
+        return null;
+    }
 }
 
 /**
