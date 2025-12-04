@@ -101,6 +101,7 @@ export interface ProcessNode {
     parentNodeName: string;
     updatedContent?: string;
     updatedStyleKey?: string;
+    skipPolish?: boolean;
     completeCallback: () => void;
 }
 

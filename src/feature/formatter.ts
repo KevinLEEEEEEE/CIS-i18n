@@ -20,6 +20,7 @@ const __MONTH_NUM_ABBR: { [key: string]: string } = {
     '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec'
 };
 
+
 /**
  * 根据目标语言和节点名称格式化内容
  * @param content - 要格式化的内容
@@ -156,6 +157,7 @@ function formatEnglishContent(content: string, nodeName: string, parentNodeName:
     content = abbreviateDay(content);
     content = abbreviateDate(content);
     content = formatContent(content, nodeName, parentNodeName);
+    content = removeTerminalPeriodIfNoComma(content);
     return content;
 }
 
@@ -165,16 +167,27 @@ function formatChineseContent(content: string): string {
 }
 
 function formatChineseDate(content: string): string {
-    // 匹配日期格式并删除空格
-    const formattedDateSpace = content.replace(/(\d{1,4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/, '$1年$2月$3日')
-        .replace(/(\d{1,2})\s*月\s*(\d{1,2})\s*日/, '$1月$2日');
-
-
-    const formattedDateSymbol = formattedDateSpace.replace(/(\d{1,4}年)?(\d{1,2}月\d{1,2}日)，\s*(周[一二三四五六日])/g, (_match, year, date, weekday) => {
+    let formattedDateSpace = content
+        .replace(/(\d{1,4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/g, '$1年$2月$3日')
+        .replace(/(\d{1,4})\s*年\s*(\d{1,2})\s*月/g, '$1年$2月')
+        .replace(/(\d{1,2})\s*月\s*(\d{1,2})\s*日/g, '$1月$2日')
+        .replace(/(\d{1,4})\s*年/g, '$1年');
+    formattedDateSpace = formattedDateSpace.replace(/(\d{1,4}年)?(\d{1,2}月\d{1,2}日)，\s*(周[一二三四五六日])/g, (_match, year, date, weekday) => {
         return `${year || ''}${date} ${weekday}`;
     });
 
-    return formattedDateSymbol;
+    formattedDateSpace = formattedDateSpace.replace(/([^\s0-9])(\d{1,4}年\d{1,2}月\d{1,2}日)/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/([^\s0-9])(\d{1,4}年\d{1,2}月)/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/([^\s0-9年])(\d{1,2}月\d{1,2}日)/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/([^\s0-9])(\d{1,4}年)(?!\d{1,2}月)/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/(\d{1,4}年\d{1,2}月\d{1,2}日)([^\s])/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/(\d{1,4}年\d{1,2}月)(?!\d{1,2}日)([^\s])/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/(\d{1,2}月\d{1,2}日)([^\s])/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/(\d{1,4}年)(?!\d{1,2}月)([^\s])/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/([^\s0-9])(\d{1,2}:\d{2}(?::\d{2})?)/g, '$1 $2');
+    formattedDateSpace = formattedDateSpace.replace(/(\d{1,2}:\d{2}(?::\d{2})?)([^\s])/g, '$1 $2');
+
+    return formattedDateSpace;
 }
 
 /**
@@ -300,6 +313,7 @@ function formatContent(inputString: string, nodeName: string, parentNodeName: st
     const titleCaseNodenames = new Set([
         '我是标题',
         '二级标题',
+        '副标题',
         'Tab-title',
         '_Avatar-title',
         'Dialog-title',
@@ -311,10 +325,18 @@ function formatContent(inputString: string, nodeName: string, parentNodeName: st
         'Menu-title',
         '标题文本',
         'ModalView_title',
-        'Tag-text'
+        'Tag-text',
+        'H1', // People
+        'H2', // People
+        'Title' // People
     ]);
 
-    const titleCaseParentNodenames = new Set(['[D] Tag_Avatar_Person', '[M] Tag_Avatar_Person']);
+    const titleCaseParentNodenames = new Set([
+        '[D] Tag_Avatar_Person',
+        '[M] Tag_Avatar_Person',
+        '🌞DS Desktop Button', // People
+        '🌞DS Desktop Tab Primary Large', // People
+    ]);
 
     const skipWords = new Set([
         'and',
@@ -378,6 +400,17 @@ function formatSpecialCases(inputString: string): string {
     }
 
     return inputString;
+}
+
+function removeTerminalPeriodIfNoComma(input: string): string {
+    const t = input.trimEnd();
+    if (!t.endsWith('.')) return input;
+    if (t.endsWith('...')) return input;
+    if (t.includes(',')) return input;
+    const last = t.lastIndexOf('.');
+    const before = t.slice(0, last);
+    if (before.includes('.') || before.includes('!') || before.includes('?')) return input;
+    return input.replace(/\.$/, '');
 }
 
 /**

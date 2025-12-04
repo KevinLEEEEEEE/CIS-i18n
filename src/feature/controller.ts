@@ -30,6 +30,7 @@ import { clearTranslationCache } from './cache';
 import { clearPolishCache } from './polisher';
 import { checkAndrefreshAccessToken, setAccessToken } from './oauthManager';
 import { googleApiKey, baiduAppId, baiduApiKey, cozeApiKey } from '../../config';
+import { findGlossaryTranslation } from './staticGlossary'
 
 async function bootstrapSecrets() {
     try {
@@ -155,11 +156,43 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
         const availableTransModal = await getAvailableTransModal(translationModal);
         const chunkSize = getTranslateChunkSize(availableTransModal);
         const termbaseMode = (await getClientStorageValue(StorageKey.Termbase)) === SwitchMode.On;
+        const sourceLanguage = targetLanguage === Language.EN ? Language.ZH : Language.EN
+        const glossaryHits: ProcessNode[] = []
+        for (const node of processNodes) {
+            const t = findGlossaryTranslation(node.textNode.characters, sourceLanguage, targetLanguage)
+            if (t && needTranslating(node.textNode.characters, targetLanguage)) {
+                console.info('[Glossary] Hit', { source: node.textNode.characters, target: t, sourceLanguage, targetLanguage })
+                node.updatedContent = t
+                node.skipPolish = true
+                glossaryHits.push(node)
+            }
+        }
+        for (const _ of glossaryHits) {
+            translateDone += 1
+            emit<any>('STAGE_STEP_COMPLETE', 'translate', translateDone)
+        }
         const untranslatedNodes = processNodes.filter((node) =>
-            needTranslating(node.textNode.characters, targetLanguage)
+            needTranslating(node.textNode.characters, targetLanguage) && !glossaryHits.includes(node)
         );
-        emit<any>('UPDATE_STAGE_TOTALS', 'translate', untranslatedNodes.length)
+        emit<any>('UPDATE_STAGE_TOTALS', 'translate', untranslatedNodes.length + glossaryHits.length)
         emit<any>('UPDATE_STAGE_TOTALS', 'format', needFormat ? processNodes.length : 0)
+
+        if (glossaryHits.length > 0 && needFormat) {
+            await Promise.all(glossaryHits.map(async (node) => {
+                await polishAndFormatNode(
+                    node,
+                    needPolish,
+                    needFormat,
+                    targetLanguage,
+                    platform,
+                    undefined,
+                    () => {
+                        formatDone += 1
+                        emit<any>('STAGE_STEP_COMPLETE', 'format', formatDone)
+                    }
+                )
+            }))
+        }
 
         // 将节点分组并行翻译
         const translationPromises = Array.from({ length: Math.ceil(untranslatedNodes.length / chunkSize) }, async (_, i) => {
@@ -210,7 +243,7 @@ async function polishAndFormatNode(
     onFormatDone?: () => void,
     onPolishSchedule?: () => void,
 ) {
-    if (needPolish && needPolishing(node.updatedContent || node.textNode.characters)) {
+    if (needPolish && !node.skipPolish && needPolishing(node.updatedContent || node.textNode.characters)) {
         onPolishSchedule && onPolishSchedule()
         await polish(node, targetLanguage);
         onPolishDone && onPolishDone()

@@ -37,16 +37,52 @@ describe('getFormattedContent', () => {
         expect(result).toBe('The event is on Wed, Oct 11.');
     });
 
-    test('should not abbreviate "Wednesday October 11" wtesthout comma', () => {
+    test('should not abbreviate "Wednesday October 11" wtesthout comma and remove terminal period', () => {
         const content = 'The event is on Wednesday and the date is October 11.';
         const result = getFormattedContent(content, Language.EN, 'nodeName', '');
-        expect(result).toBe('The event is on Wednesday and the date is Oct 11.');
+        expect(result).toBe('The event is on Wednesday and the date is Oct 11');
     });
 
     test('should convert date format from YYYY/MM/DD to "Month Day, Year"', () => {
         const content = 'The event is on 2022/02/02.';
         const result = getFormattedContent(content, Language.EN, 'nodeName', '');
         expect(result).toBe('The event is on Feb 2, 2022.');
+    });
+
+    test('should remove spaces in Chinese full date', () => {
+        const content = '2024 年 3 月 12 日';
+        const result = getFormattedContent(content, Language.ZH, 'nodeName', '');
+        expect(result).toBe('2024年3月12日');
+    });
+
+    test('should remove spaces in Chinese year month', () => {
+        const content = '2024 年 3 月';
+        const result = getFormattedContent(content, Language.ZH, 'nodeName', '');
+        expect(result).toBe('2024年3月');
+    });
+
+    test('should remove spaces in Chinese month day', () => {
+        const content = '3 月 12 日';
+        const result = getFormattedContent(content, Language.ZH, 'nodeName', '');
+        expect(result).toBe('3月12日');
+    });
+
+    test('should remove spaces in Chinese year only', () => {
+        const content = '2024 年';
+        const result = getFormattedContent(content, Language.ZH, 'nodeName', '');
+        expect(result).toBe('2024年');
+    });
+
+    test('should add spaces around Chinese date and time boundaries', () => {
+        const content = '您于2024年3月12日12:00拒绝';
+        const result = getFormattedContent(content, Language.ZH, 'nodeName', '');
+        expect(result).toBe('您于 2024年3月12日 12:00 拒绝');
+    });
+
+    test('should preserve existing spaces around Chinese date and time', () => {
+        const content = '您于 2024年3月12日 12:00 拒绝';
+        const result = getFormattedContent(content, Language.ZH, 'nodeName', '');
+        expect(result).toBe('您于 2024年3月12日 12:00 拒绝');
     });
 
     test('should format numeric date with time', () => {
@@ -80,6 +116,30 @@ describe('getFormattedContent', () => {
         expect(result).toBe(
             'The Meeting is Scheduled for Feb 2, 2022 and Test Cost $100. I Remember Test is on Wed, Oct 11. So I Have to Get Up Early on Tuesday.'
         );
+    });
+
+    test('should remove terminal period when no comma under title node', () => {
+        const content = 'Initiating a New Round of Tasks.';
+        const result = getFormattedContent(content, Language.EN, 'Dialog-title', '');
+        expect(result).toBe('Initiating a New Round of Tasks');
+    });
+
+    test('should remove terminal period when single sentence without comma', () => {
+        const content = 'You will be redirected to the RA approval process.';
+        const result = getFormattedContent(content, Language.EN, 'nodeName', '');
+        expect(result).toBe('You will be redirected to the RA approval process');
+    });
+
+    test('should keep terminal period when comma exists', () => {
+        const content = 'If needed, you can proceed to approval.';
+        const result = getFormattedContent(content, Language.EN, 'nodeName', '');
+        expect(result).toBe('If needed, you can proceed to approval.');
+    });
+
+    test('should keep terminal period when multiple sentences', () => {
+        const content = 'Task started. Approval pending.';
+        const result = getFormattedContent(content, Language.EN, 'nodeName', '');
+        expect(result).toBe('Task started. Approval pending.');
     });
 });
 
