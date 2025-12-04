@@ -25,12 +25,13 @@ import { getClientStorageValue, setLocalStorage } from '../utils/utility';
 import { translateContentByModal, needTranslating, isGoogleTranslationApiAccessible } from './translate';
 import { polishContent, needPolishing } from './polish';
 import { getFormattedContent, getFormattedStyleKey } from './format';
-import { addTranslateUsageCount, addStylelintUsageCount, addProcessNodesCount } from './usageRecord';
+import { addTranslateUsageCount, addStylelintUsageCount, addPolishUsageCount } from './usageRecord';
 import { clearTranslationCache } from './cache';
 import { clearPolishCache } from './polisher';
 import { checkAndrefreshAccessToken, setAccessToken } from './oauthManager';
 import { googleApiKey, baiduAppId, baiduApiKey, cozeApiKey } from '../../config';
 import { findGlossaryTranslation } from './staticGlossary'
+import { RequestInitTrackingHandler } from '../types'
 
 async function bootstrapSecrets() {
     try {
@@ -62,6 +63,9 @@ async function init() {
     figma.skipInvisibleInstanceChildren = true
     console.info('[Controller] Step: checkAndrefreshAccessToken');
     checkAndrefreshAccessToken();
+    const userId = figma.currentUser ? figma.currentUser.id : 'anonymous';
+    const fileKey = figma.fileKey || 'no-file-key-available';
+    emit<any>('INIT_TRACKING', userId, fileKey);
 }
 
 // 翻译按钮被点击
@@ -119,7 +123,7 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
         return;
     }
 
-    updateUsageCounts(needTranslate, needFormat);
+
 
     emit<ClearTasksHandler>('CLEAR_TASKS');
     emit<ShowProcessingLayerHandler>('SHOW_PROCESSING_LAYER');
@@ -146,8 +150,7 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
 
     // 更新待完成的任务总数
     emit<UpdateTotalTasksHandler>('UPDATE_TOTAL_TASKS', processNodes.length);
-    // 埋点记录本次操作影响的节点数
-    addProcessNodesCount(processNodes.length);
+    // 取消 process_nodes 埋点
 
     if (!needTranslate) {
         emit<any>('UPDATE_STAGE_TOTALS', 'translate', 0)
@@ -155,6 +158,13 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
     emit<any>('UPDATE_STAGE_TOTALS', 'format', needFormat ? processNodes.length : 0)
     polishTotal = needTranslate ? 0 : (needPolish ? processNodes.filter((n) => needPolishing(n.textNode.characters)).length : 0)
     emit<any>('UPDATE_STAGE_TOTALS', 'polish', polishTotal)
+    if (!needTranslate && needPolish) {
+        addPolishUsageCount(polishTotal)
+    }
+
+    if (!needTranslate && needFormat) {
+        addStylelintUsageCount(processNodes.length)
+    }
 
     // 处理需要翻译的节点
     if (needTranslate) {
@@ -181,6 +191,11 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
         );
         emit<any>('UPDATE_STAGE_TOTALS', 'translate', untranslatedNodes.length + glossaryHits.length)
         emit<any>('UPDATE_STAGE_TOTALS', 'format', needFormat ? processNodes.length : 0)
+
+        addTranslateUsageCount(untranslatedNodes.length + glossaryHits.length)
+        if (needFormat) {
+            addStylelintUsageCount(processNodes.length)
+        }
 
         if (glossaryHits.length > 0 && needFormat) {
             await Promise.all(glossaryHits.map(async (node) => {
@@ -224,6 +239,9 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
         });
 
         await Promise.all(translationPromises);
+        if (needPolish) {
+            addPolishUsageCount(polishTotal)
+        }
     }
 
     // 处理剩余的节点
@@ -265,14 +283,6 @@ function emitWarning(message: string) {
     emit<ShowToastHandler>('SHOW_TOAST', ToastType.Warning, message);
 }
 
-function updateUsageCounts(needTranslate: boolean, needFormat: boolean) {
-    if (needTranslate) {
-        addTranslateUsageCount();
-    }
-    if (needFormat) {
-        addStylelintUsageCount();
-    }
-}
 
 async function getSettings() {
     return Promise.all([
@@ -530,6 +540,11 @@ on<TranslateHandler>('TRANSLATE', handleTranslate);
 on<StylelintHandler>('STYLELINT', handleStylelint);
 on<SetAccessTokenHandler>('SET_ACCESS_TOKEN', handleSetAccessToken);
 on<ClearCacheHandler>('CLEAR_CACHE', handleClearCache);
+on<RequestInitTrackingHandler>('REQUEST_INIT_TRACKING', () => {
+    const userId = figma.currentUser ? figma.currentUser.id : 'anonymous';
+    const fileKey = figma.fileKey || 'no-file-key-available';
+    emit<any>('INIT_TRACKING', userId, fileKey);
+});
 function getTranslateChunkSize(modal: TranslationModal) {
     if (modal === TranslationModal.GoogleAdvanced || modal === TranslationModal.GoogleBasic) {
         return 50;

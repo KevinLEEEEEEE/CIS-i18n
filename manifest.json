@@ -16,10 +16,13 @@
       "https://translate.googleapis.com",
       "https://translation.googleapis.com",
       "https://api.coze.com",
-      "https://infantvein-eu.backendless.app/api/counters/"
+      "https://script.google.com/macros/s/AKfycbwo3zFWBjipGQmvOsahSBHybZ22GIIdnptumJLo-y92I4tpOmFo9XuO9OdHvkRlFoNe/exec",
+      "https://script.google.com/macros/s/AKfycbxC4m2vX_68JypeKbsrVR5wCnJp-YjYnYBM6kuQpvUXNQbF1sRMD6O5Zu2e5S_9WDxX/exec",
+      "https://script.googleusercontent.com"
     ]
   },
   "permissions": [
-    "teamlibrary"
+    "teamlibrary",
+    "currentuser"
   ]
 }

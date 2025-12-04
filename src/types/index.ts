@@ -95,6 +95,21 @@ export interface SetAccessTokenHandler extends EventHandler {
     handler: (oauthCode: string) => void;
 }
 
+export interface InitTrackingHandler extends EventHandler {
+    name: 'INIT_TRACKING';
+    handler: (userId: string, fileKey: string) => void;
+}
+
+export interface TrackEventHandler extends EventHandler {
+    name: 'TRACK_EVENT';
+    handler: (eventName: string, data?: { [key: string]: any }) => void;
+}
+
+export interface RequestInitTrackingHandler extends EventHandler {
+    name: 'REQUEST_INIT_TRACKING';
+    handler: () => void;
+}
+
 export interface ProcessNode {
     textNode: TextNode;
     nodeName: string;

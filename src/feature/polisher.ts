@@ -4,7 +4,7 @@ import { polisherLimiter, runWithLimiter } from '../utils/rateLimiter'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const __md5 = require('md5');
 const md5 = typeof __md5 === 'function' ? __md5 : __md5.default;
-const ENABLE_COZE_STREAM = true;
+const ENABLE_COZE_STREAM = false;
 
 /**
  * 润色判定的最小文本规模（英文词 + 中文字符）
@@ -23,7 +23,7 @@ const CACHE_MAX_ENTRIES = 100;
 /**
  * 润色结果缓存 TTL（毫秒），两天
  */
-const CACHE_TTL_MS = 2 * 24 * 60 * 60 * 1000;
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 /**
  * 外部 API 请求超时时间（毫秒）
  */

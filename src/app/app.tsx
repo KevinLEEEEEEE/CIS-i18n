@@ -11,6 +11,7 @@ import './global.css';
 import Toolbox from './components/toolbox';
 import Setting from './components/setting';
 import Help from './components/help';
+import { registerTrackingHandlers } from './tracking';
 
 import {
   ReceiveLocalStorageHandler,
@@ -31,6 +32,13 @@ const App = () => {
   useEffect(() => {
     console.info('[App] Step: mount effect start');
     const currChannel = ++channel;
+    registerTrackingHandlers();
+
+    if (process.env.NODE_ENV === 'development') {
+      console.info('[App] Dev mode: force navigate /help');
+      navigate('/help');
+      return;
+    }
 
     const handleReturnSetting = (objs: { key: StorageKey; value: boolean }[]) => {
       if (currChannel !== channel || objs.length === 0) {
@@ -86,6 +94,7 @@ const App = () => {
     emit<RequestLocalStorageHandler>('REQUEST_LOCAL_STORAGE', {
       key: [StorageKey.isFirstOpen],
     });
+    emit<any>('REQUEST_INIT_TRACKING');
   }, []);
 
   return (
