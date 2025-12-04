@@ -55,9 +55,12 @@ async function bootstrapSecrets() {
 
 // 初始化插件
 async function init() {
+    console.info('[Controller] Step: init start');
     await bootstrapSecrets();
     figma.showUI(__html__, { width: 380, height: 308 });
+    console.info('[Controller] Step: showUI');
     figma.skipInvisibleInstanceChildren = true
+    console.info('[Controller] Step: checkAndrefreshAccessToken');
     checkAndrefreshAccessToken();
 }
 
@@ -105,6 +108,7 @@ async function handleClearCache() {
 
 // 核心处理逻辑
 async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, needPolish: boolean, needFormat: boolean) {
+    console.info('[Controller] Step: processNodesTasks enter', { nodes: nodes.length, needTranslate, needPolish, needFormat });
     if (nodes.length === 0) {
         emitWarning('Please select at least one node');
         return;
@@ -119,6 +123,7 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
 
     emit<ClearTasksHandler>('CLEAR_TASKS');
     emit<ShowProcessingLayerHandler>('SHOW_PROCESSING_LAYER');
+    console.info('[Controller] Step: processing layer show');
 
     const startTime = new Date();
     const [targetLanguage, displayMode, platform, translationModal] = await getSettings();
@@ -231,6 +236,7 @@ async function processNodesTasks(nodes: SceneNode[], needTranslate: boolean, nee
 
     // 记录任务完成时间
     logCompletion(startTime);
+    console.info('[Controller] Step: processNodesTasks exit');
 }
 
 async function polishAndFormatNode(
@@ -370,7 +376,7 @@ function formatter(processNode: ProcessNode, targetLanguage: Language, platform:
         return;
     }
 
-    console.log(`[Format Task]\n\nTarget: ${content} \n\nResult: ${formattedContent}`);
+    // console.log(`[Format Task]\n\nTarget: ${content} \n\nResult: ${formattedContent}`);
 
     processNode.updatedContent = formattedContent;
     processNode.updatedStyleKey = formattedStyleKey;

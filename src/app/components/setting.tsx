@@ -52,6 +52,7 @@ const Setting = () => {
 
     // 初始化时调整窗口大小并读取设置
     useEffect(() => {
+        console.info('[Setting] Step: init effect start');
         emit<ResizeWindowHandler>('RESIZE_WINDOW', { width: 360, height: 512 });
         emit<RequestLocalStorageHandler>('REQUEST_LOCAL_STORAGE', {
             key: [

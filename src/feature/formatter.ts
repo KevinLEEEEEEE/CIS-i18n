@@ -20,6 +20,58 @@ const __MONTH_NUM_ABBR: { [key: string]: string } = {
     '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec'
 };
 
+const TITLE_CASE_NODE_NAMES = new Set([
+    '我是标题',
+    '二级标题',
+    '副标题',
+    'Tab-title',
+    '_Avatar-title',
+    'Dialog-title',
+    'Button-text',
+    'Menu__brand-name',
+    'MenuItem-label',
+    'TabPane-text-selected',
+    'TabPane-text',
+    'Menu-title',
+    '标题文本',
+    'ModalView_title',
+    'Tag-text',
+    'H1',
+    'H2',
+    'Title',
+    'title'
+]);
+
+const TITLE_CASE_PARENT_NODE_NAMES = new Set([
+    '[D] Tag_Avatar_Person',
+    '[M] Tag_Avatar_Person',
+    '🌞DS Desktop Button',
+    '🌞DS Desktop Tab Primary Large',
+]);
+
+const TITLE_CASE_SKIP_WORDS = new Set([
+    'and', 'or', 'but', 'the', 'a', 'an', 'in', 'on', 'at', 'for', 'to', 'with', 'by', 'of', 'as', 'is', 'are', 'was', 'were'
+]);
+
+const DATE_SLASH_REGEX = /(\d{4})\/(\d{2})\/(\d{2})(?:-(\d{4})\/(\d{2})\/(\d{2}))?/g;
+
+const HTML_ENTITIES: Record<string, string> = {
+    '&#39;': "'",
+    '&quot;': '"',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&nbsp;': ' ',
+};
+
+const EN_MONTH_PATTERN = '(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
+const EN_WEEKDAY_PATTERN = '(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sun|Mon|Tue|Wed|Thu|Fri|Sat)';
+const EN_TIME_PATTERN = '(\\d{1,2}:\\d{2})';
+const EN_DT_TEXT_RE = new RegExp(`(?:${EN_WEEKDAY_PATTERN}[,\\s]+)?${EN_MONTH_PATTERN}[\\s]+(\\d{1,2})(?:[,\\s]+(\\d{4}))?(?:[,\\s]+${EN_TIME_PATTERN})`, 'g');
+const EN_DT_NUM_RE = /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})(?:[,\s]+(\d{1,2}:\d{2}))\b/g;
+
+const TYPO_INDEX = new Map<string, any>();
+
 
 /**
  * 根据目标语言和节点名称格式化内容
@@ -79,16 +131,9 @@ export function getFormattedStyleKey(
     if (!fontName || !fontName.style || fontSize <= 0 || !language || !platform) {
         return '';
     }
-
-    for (const key in typographyDictionary) {
-        const style = typographyDictionary[key];
-
-        if (isMatchingStyle(style, fontName, fontSize, language, platform)) {
-            return style.styleKey;
-        }
-    }
-
-    return '';
+    const idxKey = `${fontName.style}|${fontSize}|${language}|${platform}`;
+    const hit = TYPO_INDEX.get(idxKey);
+    return hit ? hit.styleKey : '';
 }
 
 /**
@@ -108,41 +153,12 @@ export function getFormattedFontName(
     if (!fontName || !fontName.style || fontSize <= 0 || !language || !platform) {
         return null;
     }
-
-    for (const key in typographyDictionary) {
-        const style = typographyDictionary[key];
-        if (isMatchingStyle(style, fontName, fontSize, language, platform)) {
-            return style.fontName;
-        }
-    }
-    return null;
+    const idxKey = `${fontName.style}|${fontSize}|${language}|${platform}`;
+    const hit = TYPO_INDEX.get(idxKey);
+    return hit ? hit.fontName : null;
 }
 
-/**
- * 检查样式是否匹配
- * @param style - 样式对象
- * @param fontName - 字体名称对象
- * @param fontSize - 字体大小
- * @param language - 语言
- * @param platform - 平台
- * @returns 是否匹配
- */
-function isMatchingStyle(
-    style: any,
-    fontName: FontName,
-    fontSize: number,
-    language: Language,
-    platform: Platform
-): boolean {
-    const { fontName: styleFontName, fontSize: styleFontSize, language: styleLanguage, platform: stylePlatform } = style;
 
-    return (
-        styleFontName.style === fontName.style &&
-        styleFontSize === fontSize &&
-        styleLanguage === language &&
-        stylePlatform === platform
-    );
-}
 
 /**
  * 格式化英文内容
@@ -196,24 +212,10 @@ function formatChineseDate(content: string): string {
  * @returns 缩写后的内容
  */
 function abbreviateDate(content: string): string {
-    const monthMap: { [key: string]: string } = {
-        January: 'Jan',
-        February: 'Feb',
-        March: 'Mar',
-        April: 'Apr',
-        May: 'May',
-        June: 'Jun',
-        July: 'Jul',
-        August: 'Aug',
-        September: 'Sep',
-        October: 'Oct',
-        November: 'Nov',
-        December: 'Dec',
-    };
     return content.replace(
         /(January|February|March|April|May|June|July|August|September|October|November|December) (\d{1,2})/g,
         (_, month, day) => {
-            return `${monthMap[month]} ${day}`;
+            return `${__MONTH_ABBR[month]} ${day}`;
         }
     );
 }
@@ -224,20 +226,11 @@ function abbreviateDate(content: string): string {
  * @returns 缩写后的内容
  */
 function abbreviateDay(content: string): string {
-    const dayMap: { [key: string]: string } = {
-        Sunday: 'Sun',
-        Monday: 'Mon',
-        Tuesday: 'Tue',
-        Wednesday: 'Wed',
-        Thursday: 'Thu',
-        Friday: 'Fri',
-        Saturday: 'Sat',
-    };
     return content.replace(
         /\b(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday), (January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}\b/g,
         (match) => {
             const [day, rest] = match.split(', ');
-            return `${dayMap[day]}, ${rest}`;
+            return `${__DAY_ABBR[day]}, ${rest}`;
         }
     );
 }
@@ -248,24 +241,9 @@ function abbreviateDay(content: string): string {
  * @returns 格式化后的内容
  */
 function formatDate(content: string): string {
-    const monthMap: { [key: string]: string } = {
-        '01': 'Jan',
-        '02': 'Feb',
-        '03': 'Mar',
-        '04': 'Apr',
-        '05': 'May',
-        '06': 'Jun',
-        '07': 'Jul',
-        '08': 'Aug',
-        '09': 'Sep',
-        '10': 'Oct',
-        '11': 'Nov',
-        '12': 'Dec',
-    };
-    const regex = /(\d{4})\/(\d{2})\/(\d{2})(?:-(\d{4})\/(\d{2})\/(\d{2}))?/g;
-    return content.replace(regex, (_match, year1, month1, day1, year2, month2, day2) => {
+    return content.replace(DATE_SLASH_REGEX, (_match, year1, month1, day1, year2, month2, day2) => {
         const formatSingleDate = (year: string, month: string, day: string) => {
-            const abbreviatedMonth = monthMap[month];
+            const abbreviatedMonth = __MONTH_NUM_ABBR[month];
             const dayWithoutLeadingZero = parseInt(day, 10); // 去掉前导零
             return `${abbreviatedMonth} ${dayWithoutLeadingZero}, ${year}`;
         };
@@ -280,20 +258,14 @@ function formatDate(content: string): string {
 }
 
 function formatDateTime(content: string): string {
-    const MONTH_PATTERN = '(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
-    const WEEKDAY_PATTERN = '(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sun|Mon|Tue|Wed|Thu|Fri|Sat)';
-    const TIME_PATTERN = '(\\d{1,2}:\\d{2})';
-    const reText = new RegExp(`(?:${WEEKDAY_PATTERN}[,\\s]+)?${MONTH_PATTERN}[\\s]+(\\d{1,2})(?:[,\\s]+(\\d{4}))?(?:[,\\s]+${TIME_PATTERN})`, 'g');
-    const reNum = /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})(?:[,\s]+(\d{1,2}:\d{2}))\b/g;
-
-    const out1 = content.replace(reText, (_m, w, month, day, year, time) => {
+    const out1 = content.replace(EN_DT_TEXT_RE, (_m, w, month, day, year, time) => {
         const m = month.length > 3 ? __MONTH_ABBR[month] : month;
         const d = parseInt(day, 10);
         const wk = w ? (w.length > 3 ? __DAY_ABBR[w] : w) : '';
         const datePart = `${m} ${d}${year ? `, ${year}` : ''}`;
         return wk ? `${wk}, ${datePart}, ${time}` : `${datePart}, ${time}`;
     });
-    const out2 = out1.replace(reNum, (_m, year, month, day, time) => {
+    const out2 = out1.replace(EN_DT_NUM_RE, (_m, year, month, day, time) => {
         const mm = month.length === 1 ? `0${month}` : month;
         const m = __MONTH_NUM_ABBR[mm];
         const d = parseInt(day, 10);
@@ -310,75 +282,15 @@ function formatDateTime(content: string): string {
  * @returns 格式化后的字符串
  */
 function formatContent(inputString: string, nodeName: string, parentNodeName: string): string {
-    const titleCaseNodenames = new Set([
-        '我是标题',
-        '二级标题',
-        '副标题',
-        'Tab-title',
-        '_Avatar-title',
-        'Dialog-title',
-        'Button-text',
-        'Menu__brand-name',
-        'MenuItem-label',
-        'TabPane-text-selected',
-        'TabPane-text',
-        'Menu-title',
-        '标题文本',
-        'ModalView_title',
-        'Tag-text',
-        'H1', // People
-        'H2', // People
-        'Title' // People
-    ]);
-
-    const titleCaseParentNodenames = new Set([
-        '[D] Tag_Avatar_Person',
-        '[M] Tag_Avatar_Person',
-        '🌞DS Desktop Button', // People
-        '🌞DS Desktop Tab Primary Large', // People
-    ]);
-
-    const skipWords = new Set([
-        'and',
-        'or',
-        'but',
-        'the',
-        'a',
-        'an',
-        'in',
-        'on',
-        'at',
-        'for',
-        'to',
-        'with',
-        'by',
-        'of',
-        'as',
-        'is',
-        'are',
-        'was',
-        'were',
-    ]);
-
-    if (titleCaseNodenames.has(nodeName) || titleCaseParentNodenames.has(parentNodeName)) {
-        return titleCase(inputString, skipWords);
+    if (TITLE_CASE_NODE_NAMES.has(nodeName) || TITLE_CASE_PARENT_NODE_NAMES.has(parentNodeName)) {
+        return titleCase(inputString, TITLE_CASE_SKIP_WORDS);
     }
 
     return formatSpecialCases(inputString);
 }
 
-function decodeHtmlEntities(input) {
-    const entities = {
-        '&#39;': "'",
-        '&quot;': '"',
-        '&amp;': '&',
-        '&lt;': '<',
-        '&gt;': '>',
-        '&nbsp;': ' ',
-        // 可以根据需要添加更多实体
-    };
-
-    return input.replace(/&#39;|&quot;|&amp;|&lt;|&gt;|&nbsp;/g, match => entities[match]);
+function decodeHtmlEntities(input: string): string {
+    return input.replace(/&#39;|&quot;|&amp;|&lt;|&gt;|&nbsp;/g, (match) => HTML_ENTITIES[match]);
 }
 
 function titleCase(inputString: string, skipWords: Set<string>): string {
@@ -843,3 +755,10 @@ const typographyDictionary = {
         styleKey: '0b211cb702dec992c1df5dbaaf7297e0ae180f30',
     },
 };
+for (const k in typographyDictionary) {
+    const style = typographyDictionary[k];
+    const idxKey = `${style.fontName.style}|${style.fontSize}|${style.language}|${style.platform}`;
+    if (!TYPO_INDEX.has(idxKey)) {
+        TYPO_INDEX.set(idxKey, style);
+    }
+}

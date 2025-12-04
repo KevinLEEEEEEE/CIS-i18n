@@ -35,7 +35,7 @@ function handleError(error: any, context: string) {
  */
 export function needTranslating(content: string, targetLanguage: Language): boolean {
   const skipTranslateDictionary: Set<string> = new Set([
-    'CNY', 'USD', 'AED', 'EUR', 'GBP', 'JPY', 'CHF', 'HKD', 'SGD', 'RUB', 'INR', 'Hi Travel'
+    'CNY', 'USD', 'AED', 'EUR', 'GBP', 'JPY', 'CHF', 'HKD', 'SGD', 'RUB', 'INR', 'Hi Travel', 'Sentry'
   ]);
 
   // 跳过词典：用于避免货币/品牌等固定词误翻

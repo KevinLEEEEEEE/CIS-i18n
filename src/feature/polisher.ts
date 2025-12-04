@@ -9,7 +9,7 @@ const md5 = typeof __md5 === 'function' ? __md5 : __md5.default;
  * 润色判定的最小文本规模（英文词 + 中文字符）
  * 说明：低于阈值不触发润色，避免短词误改
  */
-const MINIMAL_POLISH_CONTENT_LENGTH = 5;
+const MINIMAL_POLISH_CONTENT_LENGTH = 20;
 /**
  * 每秒最大调用次数（本地节流）
  * 说明：配合限速器，平滑请求压力

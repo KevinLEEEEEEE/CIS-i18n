@@ -29,6 +29,7 @@ const App = () => {
 
   // 处理返回的设置
   useEffect(() => {
+    console.info('[App] Step: mount effect start');
     const currChannel = ++channel;
 
     const handleReturnSetting = (objs: { key: StorageKey; value: boolean }[]) => {
@@ -42,10 +43,11 @@ const App = () => {
         if (value === true) {
           // 如果是首次打开，设置标记并导航到 /help
           emit<SetLocalStorageHandler>('SET_LOCAL_STORAGE', [{ key: StorageKey.isFirstOpen, value: false }]);
-
+          console.info('[App] Step: navigate /help');
           navigate('/help');
         } else {
           // 如果不是首次打开，导航到 /
+          console.info('[App] Step: navigate /');
           navigate('/');
         }
       }
@@ -75,10 +77,12 @@ const App = () => {
     };
 
     // 监听 RETURN_SETTING 事件
+    console.info('[App] Step: listeners registered');
     on<ReceiveLocalStorageHandler>('RECEIVE_LOCAL_STORAGE', handleReturnSetting);
     on<ShowToastHandler>('SHOW_TOAST', handleShowToast);
 
     // 请求本地存储
+    console.info('[App] Step: request local storage isFirstOpen');
     emit<RequestLocalStorageHandler>('REQUEST_LOCAL_STORAGE', {
       key: [StorageKey.isFirstOpen],
     });

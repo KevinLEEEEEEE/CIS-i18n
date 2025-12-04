@@ -52,6 +52,7 @@ const Toolbox = () => {
 
     // 初始化时更新窗口大小并读取设置
     useEffect(() => {
+        console.info('[Toolbox] Step: init effect start');
         emit<ResizeWindowHandler>('RESIZE_WINDOW', { width: 360, height: 396 });
         emit<RequestLocalStorageHandler>('REQUEST_LOCAL_STORAGE', {
             key: [StorageKey.TargetLanguage, StorageKey.DisplayMode, StorageKey.Platform, StorageKey.AutoPolishing, StorageKey.AutoStylelintMode],
@@ -91,10 +92,12 @@ const Toolbox = () => {
         };
 
         const showProcessingLayer = () => {
+            console.info('[Toolbox] Step: showProcessingLayer');
             setIsLoading(true);
         }
 
         const hideProcessingLayer = () => {
+            console.info('[Toolbox] Step: hideProcessingLayer');
             setIsLoading(false);
         }
 
