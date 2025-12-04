@@ -39,6 +39,11 @@ export async function setLocalStorage(key: StorageKey, value: any) {
     if (typeof figma !== 'undefined' && figma.clientStorage && typeof figma.clientStorage.setAsync === 'function') {
         await figma.clientStorage.setAsync(key, value);
     }
+    else {
+        try {
+            window.localStorage.setItem(key, JSON.stringify(value));
+        } catch { }
+    }
 }
 
 export async function getClientStorageValue(key: StorageKey) {
@@ -49,7 +54,14 @@ export async function getClientStorageValue(key: StorageKey) {
 
     const value = (typeof figma !== 'undefined' && figma.clientStorage && typeof figma.clientStorage.getAsync === 'function')
         ? await figma.clientStorage.getAsync(key)
-        : undefined;
+        : (() => {
+            try {
+                const v = window.localStorage.getItem(key);
+                return v !== null ? JSON.parse(v) : undefined;
+            } catch {
+                return undefined;
+            }
+        })();
     const result = value !== undefined ? value : (defaultValues[key] !== undefined ? defaultValues[key] : '');
 
     // 缓存结果

@@ -34,18 +34,20 @@ const App = () => {
     const currChannel = ++channel;
     registerTrackingHandlers();
 
-    if (process.env.NODE_ENV === 'development') {
-      console.info('[App] Dev mode: force navigate /help');
+    const devMode = process.env.NODE_ENV === 'development';
+    if (devMode) {
       navigate('/help');
-      return;
     }
 
     const handleReturnSetting = (objs: { key: StorageKey; value: boolean }[]) => {
       if (currChannel !== channel || objs.length === 0) {
         return;
       }
+      if (devMode) {
+        return;
+      }
 
-      const { key, value } = objs[0]; // 获取第一个对象的 key 和 value
+      const { key, value } = objs[0];
 
       if (key === StorageKey.isFirstOpen) {
         if (value === true) {
